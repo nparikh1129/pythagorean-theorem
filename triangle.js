@@ -1,102 +1,122 @@
 "use strict";
-let draw = SVG().addTo('body').size(500, 500).css({ 'background-color': '#ddd' })
+
+let draw = SVG().addTo('body').size(1000, 500).css({ 'background-color': '#ddd' })
 
 
-let sizeMax = 300;
-let verts = [
-  [0, 0],
-  [sizeMax/2, 0],
-  [0, sizeMax/2],
-];
-
-let triangle = draw.polygon(verts).fill('#9CE1FF');
-
-let lineAttrs = {
-  width: 4,
-  linecap: 'round',
-};
-
-let lineA = draw.line([[0, 0], verts[1]]).stroke({
-  color: '#ff3b30',
-  ...lineAttrs,
-});
-
-let lineB = draw.line([[0, 0], verts[2]]).stroke({
-  color: '#007bff',
-  ...lineAttrs,
-});
-
-let lineC = draw.line([verts[1], verts[2]]).stroke({
-  color: '#34c759',
-  ...lineAttrs,
-});
-
-let circleAttrs = {
-  r: 5,
-  fill: "#fff",
-  stroke: "#000",
-  'stroke-width': 1,
-  style: "cursor: grab;"
-};
-
-let circleBeforeDragHandler = function(e) {
-  const { handler } = e.detail;
-  console.log(handler.el)
-  handler.el.css('cursor', 'grabbing');
-  draw.css('cursor', 'grabbing');
-}
-
-let circleDragEndHandler = function(e) {
-  const { handler } = e.detail;
-  handler.el.css('cursor', 'grab');
-  draw.css('cursor', null);
-}
-
-let circleA = draw.circle(circleAttrs).center(...verts[1]).draggable();
-circleA.on('beforedrag.namespace', circleBeforeDragHandler);
-circleA.on('dragend.namespace', circleDragEndHandler);
-circleA.on('dragmove.namespace', e => {
-  const { handler, box } = e.detail
-  e.preventDefault()
+SVG.ResizableRightTriangle = class extends SVG.G {
   
-  let x = box.cx;
-  if (box.cx <= 0) {
-    x = 0;
-  }
-  else if (box.cx >= sizeMax) {
-    x = sizeMax;
-  }
+  constructor(maxSize) {
+    super();
+    
+    this._lineA = draw.resizableLine(maxSize, '#007bff');
 
-  handler.el.center(x, 0)
-  lineA.attr('x2', x)
-  lineC.attr('x1', x)
-  verts[1] = [x, 0]
-  triangle.plot(verts)
-})
+    this._lineB = draw.resizableLine(maxSize, '#ff3b30').rotate(90, 0, 0);
 
-let circleB = draw.circle(circleAttrs).center(...verts[2]).draggable();
-circleB.on('beforedrag.namespace', circleBeforeDragHandler);
-circleB.on('dragend.namespace', circleDragEndHandler);
-circleB.on('dragmove.namespace', e => {
-  const { handler, box } = e.detail
-  e.preventDefault()
+    this._verts = [
+      [0, 0],
+      [this._lineA.length, 0],
+      [0, this._lineB.length],
+    ];
+
+    this._triangle = draw.polygon(this._verts).attr({
+      fill: "#9CE1FF",
+      stroke: "#34c759",
+      'stroke-width': 4,
+    });
+
+
+    this._lineA.on('resize', () => {
+      this._verts[1][0] = this._lineA.length;
+      this._triangle.plot(this._verts);
+    });
+
+    this._lineB.on('resize', () => {
+      this._verts[2][1] = this._lineB.length;
+      this._triangle.plot(this._verts);
+    });
+
+
+    this.add(this._lineA);
+    this.add(this._lineB);
+    this.add(this._triangle);
+
+    this._triangle.back();
+  }
+}
+SVG.extend(SVG.Container, {
+  resizableRightTriangle: function(maxLength) {
+    return this.put(new SVG.ResizableRightTriangle(maxLength))
+  }
+});
+
+
+SVG.ResizableLine = class extends SVG.G {
   
-  let y = box.cy;
-  if (box.cy <= 0) {
-    y = 0;
+  constructor(maxLength, color = "#000") {
+    super();
+
+    this.maxLength = maxLength;
+    this.minLength = 8;
+
+    
+    this._line = draw.line(0, 0, maxLength, 0).stroke({
+      color: color,
+      width: 4,
+      linecap: 'round',
+    });
+
+    this._resizeHandle = draw.circle({
+      r: 5,
+      fill: "#fff",
+      stroke: "#000",
+      'stroke-width': 1,
+      style: "cursor: grab;"
+    }).center(maxLength, 0).draggable();
+
+    this._resizeHandle.on('beforedrag.namespace', e => {
+      const { handler } = e.detail;
+      handler.el.css('cursor', 'grabbing');
+      draw.css('cursor', 'grabbing');
+    });
+
+    this._resizeHandle.on('dragend.namespace', e => {
+      const { handler } = e.detail;
+      handler.el.css('cursor', 'grab');
+      draw.css('cursor', null);
+    });
+
+    this._resizeHandle.on('dragmove.namespace', e => {
+      const { handler, box } = e.detail
+      e.preventDefault()
+      
+      let x = box.cx;
+      if (box.cx <= this.minLength) {
+        x = this.minLength;
+      }
+      else if (box.cx >= this.maxLength) {
+        x = this.maxLength;
+      }
+      handler.el.center(x, 0);
+      this._line.attr('x2', x);
+      this.fire('resize')
+    })
+
+    this.add(this._line);
+    this.add(this._resizeHandle);
   }
-  else if (box.cy >= sizeMax) {
-    y = sizeMax;
+
+  get length() {
+    return this._line.attr('x2');
   }
+}
+SVG.extend(SVG.Container, {
+  resizableLine: function(maxLength, color) {
+    return this.put(new SVG.ResizableLine(maxLength, color))
+  }
+});
 
-  handler.el.center(0, y)
-  lineB.attr('y2', y)
-  lineC.attr('y2', y)
-  verts[2] = [0, y]
-  triangle.plot(verts)
-})
 
-
+let triangle = draw.resizableRightTriangle(200).animate(1000).translate(200, 400).rotate(-90, 0, 0)
 
 // let rightAngleBox = draw.rect(15, 15)
 // rightAngleBox.attr({
@@ -108,20 +128,3 @@ circleB.on('dragmove.namespace', e => {
 // rightAngleBox.dy(yPos - rightAngleBox.height())
 
 
-
-
-
-
-
-
-// class ResizableRightTriangle {
-//   constructor(width, height) {
-//     this.verts = [[0, 0], [width, 0], [0, height]];
-
-//     this.triangle = draw.polygon(this.verts).fill('#9CE1FF');
-    
-//     this.group = draw.group();
-//     this.group.add(this.triangle);
-//   }
-// }
-// triangle = new ResizableRightTriangle(300, 300);
