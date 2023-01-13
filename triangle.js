@@ -1,6 +1,16 @@
 "use strict";
 
-let draw = SVG().addTo('body').size(1000, 500).css({ 'background-color': '#ddd' })
+const RED = '#ff3b30';
+const GREEN = '#34c759'
+const BLUE = '#007bff';
+const GRAY = '#8e8e93';
+const LIGHT_RED ='#ffb6b3';
+const LIGHT_BLUE = '#b2d7ff';
+const LIGHT_GREEN = '#aeeabd';
+const DARK_GRAY = '#3a3a3c';
+
+
+let draw = SVG().addTo('body').size(1200, 800).css({ 'background-color': '#ddd' })
 
 
 SVG.ResizableRightTriangle = class extends SVG.G {
@@ -8,9 +18,9 @@ SVG.ResizableRightTriangle = class extends SVG.G {
   constructor(maxSize) {
     super();
     
-    this._lineA = draw.resizableLine(maxSize, '#007bff');
+    this._lineA = draw.resizableLine(maxSize, BLUE);
 
-    this._lineB = draw.resizableLine(maxSize, '#ff3b30').rotate(90, 0, 0);
+    this._lineB = draw.resizableLine(maxSize, RED).rotate(90, 0, 0);
 
     this._verts = [
       [0, 0],
@@ -19,28 +29,55 @@ SVG.ResizableRightTriangle = class extends SVG.G {
     ];
 
     this._triangle = draw.polygon(this._verts).attr({
-      fill: "#9CE1FF",
-      stroke: "#34c759",
+      fill: LIGHT_BLUE,
+      stroke: GRAY,
       'stroke-width': 4,
     });
 
+    this._rightAngleSymbol = draw.rect(15, 15)
+    this._rightAngleSymbol.attr({
+      'fill-opacity': 0,
+      stroke: DARK_GRAY,
+      'stroke-width': 1,
+    })
 
+    // Event handlers
     this._lineA.on('resize', () => {
       this._verts[1][0] = this._lineA.length;
       this._triangle.plot(this._verts);
+      if (this._lineA._resizeHandle.bbox().intersectsWith(this._rightAngleSymbol.bbox())) {
+        this._rightAngleSymbol.attr({stroke: '0'})
+      }
+      else {
+        this._rightAngleSymbol.attr({stroke: DARK_GRAY})
+      }
     });
 
     this._lineB.on('resize', () => {
       this._verts[2][1] = this._lineB.length;
       this._triangle.plot(this._verts);
+      if (this._lineB._resizeHandle.bbox().intersectsWith(this._rightAngleSymbol.bbox())) {
+        this._rightAngleSymbol.attr({stroke: '0'})
+      }
+      else {
+        this._rightAngleSymbol.attr({stroke: DARK_GRAY})
+      }
     });
 
 
+    // Arrangement
+    this.add(this._triangle);
+    this.add(this._rightAngleSymbol);
     this.add(this._lineA);
     this.add(this._lineB);
-    this.add(this._triangle);
+  }
 
-    this._triangle.back();
+  get lengthA() {
+    return this._lineA.length;
+  }
+
+  get lengthB() {
+    return this._lineB.length;
   }
 }
 SVG.extend(SVG.Container, {
@@ -116,15 +153,77 @@ SVG.extend(SVG.Container, {
 });
 
 
-let triangle = draw.resizableRightTriangle(200).animate(1000).translate(200, 400).rotate(-90, 0, 0)
+SVG.RightTriangle = class extends SVG.G {
 
-// let rightAngleBox = draw.rect(15, 15)
-// rightAngleBox.attr({
-//   'fill-opacity': 0,
-//   stroke: '#3a3a3c',
-//   'stroke-width': 1,
-// })
-// rightAngleBox.dx(xMin)
-// rightAngleBox.dy(yPos - rightAngleBox.height())
+  constructor(lengthA, lengthB) {
+    super();
 
+    this._lineA = draw.line(0, 0, lengthA, 0).stroke({
+      color: BLUE,
+      width: 4,
+      linecap: 'round',
+    });
+
+    this._lineB = draw.line(0, 0, lengthB, 0).stroke({
+      color: RED,
+      width: 4,
+      linecap: 'round',
+    }).rotate(90, 0, 0);
+
+    this._verts = [
+      [0, 0],
+      [lengthA, 0],
+      [0, lengthB],
+    ];
+
+    this._triangle = draw.polygon(this._verts).attr({
+      fill: LIGHT_BLUE,
+      stroke: GRAY,
+      'stroke-width': 4,
+    });
+
+    this.add(this._triangle);
+    this.add(this._lineA);
+    this.add(this._lineB);
+  }
+}
+SVG.extend(SVG.Container, {
+  rightTriangle: function(lengthA, lengthB) {
+    return this.put(new SVG.RightTriangle(lengthA, lengthB))
+  }
+});
+
+
+let resizableTriangle = draw.resizableRightTriangle(200).translate(200, 400).rotate(-90, 0, 0);
+
+draw.on("dblclick", () => {
+  let squareCenter = [750, 250];
+  let squareSize = resizableTriangle.lengthA + resizableTriangle.lengthB;
+  let square = draw.rect(squareSize, squareSize).fill(LIGHT_GREEN).transform({
+    position: squareCenter
+  });
+  let box = square.bbox().transform(square.matrix());
+
+  let t1 = draw.rightTriangle(resizableTriangle.lengthA, resizableTriangle.lengthB).transform({
+    origin: [0, 0],
+    rotate: -90,
+    translate: [box.x, box.y2],
+  });
+
+  let t2 = draw.rightTriangle(resizableTriangle.lengthA, resizableTriangle.lengthB).transform({
+    translate: [box.x, box.y],
+  });
+
+  let t3 = draw.rightTriangle(resizableTriangle.lengthA, resizableTriangle.lengthB).transform({
+    origin: [0, 0],
+    rotate: 90,
+    translate: [box.x2, box.y],
+  });
+
+  let t4 = draw.rightTriangle(resizableTriangle.lengthA, resizableTriangle.lengthB).transform({
+    origin: [0, 0],
+    rotate: 180,
+    translate: [box.x2, box.y2],
+  });
+});
 
