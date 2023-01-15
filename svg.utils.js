@@ -9,6 +9,12 @@ SVG.extend(SVG.Box, {
     [x2min, x2max] = box.x <= box.x2 ? [box.x, box.x2] : [box.x2, box.x];
     [y2min, y2max] = box.y <= box.y2 ? [box.y, box.y2] : [box.y2, box.y];
 
-    return (x1min < x2max && x2min < x1max) && (y1min < y2max && y2min < y1max)  
+    return (x1min < x2max && x2min < x1max) && (y1min < y2max && y2min < y1max);
   }
-})
+});
+
+SVG.extend(SVG.Element, {
+  tbox: function() {
+    return this.bbox().transform(this.matrix());
+  }
+});
