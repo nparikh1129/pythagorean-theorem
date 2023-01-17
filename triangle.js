@@ -15,7 +15,7 @@ let draw = SVG().addTo('body').size(1200, 800).css({ 'background-color': '#ddd' 
 
 SVG.RightTriangle = class extends SVG.G {
 
-  constructor(maxSize, lengthA = maxSize, lengthB = maxSize) {
+  constructor(lengthA, lengthB, maxSize = Infinity) {
     super();
 
     this.maxSize = maxSize;
@@ -198,71 +198,266 @@ SVG.extend(SVG.Container, {
 });
 
 
+SVG.ProofSquare = class extends SVG.G {
 
-let triangle = draw.rightTriangle(200).translate(200, 400).rotate(-90, 0, 0);
+  constructor(triangle, x, y) {
+    super();
 
-let triangleSymbol = draw.symbol().rightTriangle(triangle.maxSize, triangle.lengthA, triangle.lengthB)
-triangleSymbol.toggleResizeHandles().toggleRightAngleSymbol()
-triangle.on('resize', () => {
-  triangleSymbol.resize(triangle.lengthA, triangle.lengthB);
-});
+    this.triangle = triangle
+    this.x = x;
+    this.y = y;
+    this.arrangement = 'TWISTED_SQUARES';
 
+    this.t1 = draw.rightTriangle(triangle.lengthA, triangle.lengthB).toggleResizeHandles().toggleRightAngleSymbol();
+    this.t2 = draw.rightTriangle(triangle.lengthA, triangle.lengthB).toggleResizeHandles().toggleRightAngleSymbol();
+    this.t3 = draw.rightTriangle(triangle.lengthA, triangle.lengthB).toggleResizeHandles().toggleRightAngleSymbol();
+    this.t4 = draw.rightTriangle(triangle.lengthA, triangle.lengthB).toggleResizeHandles().toggleRightAngleSymbol();
 
-draw.on("dblclick", () => {
-  let squareCenter = [750, 250];
-  let squareSize = triangle.lengthA + triangle.lengthB;
-  let square = draw.rect(squareSize, squareSize).attr({
-    fill: LIGHT_GREEN,
-    stroke: GREEN,
-    'stroke-width': 4,
-    'stroke-linejoin': 'round',
-  }).transform({
-    position: squareCenter,
-  });
-  let box;
-
-  let t1  = draw.use(triangleSymbol);
-  let t2  = draw.use(triangleSymbol);
-  let t3  = draw.use(triangleSymbol);
-  let t4  = draw.use(triangleSymbol);
-
-  function resize() {
-    squareSize = triangleSymbol.lengthA + triangleSymbol.lengthB;
-
-    square.size(squareSize).transform({
-      position: squareCenter,
-    });
-
-    box = square.tbox();
-
-    t1.transform({
-      origin: [0, 0],
-      rotate: -90,
-      translate: [box.x, box.y2],
+    this.size = this.triangle.lengthA + this.triangle.lengthB;
+    this.square = draw.rect(this.size, this.size).attr({
+      fill: LIGHT_GREEN,
+      stroke: GREEN,
+      'stroke-width': 4,
+      'stroke-linejoin': 'round',
     })
-    t2.transform({
-      translate: [box.x, box.y],
-    });
-    t3.transform({
-      origin: [0, 0],
-      rotate: 90,
-      translate: [box.x2, box.y],
-    });
-    t4.transform({
-      origin: [0, 0],
-      rotate: 180,
-      translate: [box.x2, box.y2],
-    });
+
+    triangle.on('resize', () => { this.resize() });
+
+    this.add(this.square);
+    this.add(this.t1).add(this.t2).add(this.t3).add(this.t4);
+
+    this.resize();
   }
 
-  resize();
-  triangleSymbol.on('resize', resize);
+  resize() {
+    let lengthA = this.triangle.lengthA;
+    let lengthB = this.triangle.lengthB;
+    let size = lengthA + lengthB;
+    
+    this.square.size(size)
+    this.t1.resize(lengthA, lengthB);
+    this.t2.resize(lengthA, lengthB);
+    this.t3.resize(lengthA, lengthB);
+    this.t4.resize(lengthA, lengthB);
+
+    let box = this.square.bbox();
+
+    if (this.arrangement == 'TWISTED_SQUARES') {
+      this.t1.transform({
+        origin: [0, 0],
+        translate: [box.x, box.y],
+      });
+      this.t2.transform({
+        origin: [0, 0],
+        rotate: 90,
+        translate: [box.x2, box.y],
+      });
+      this.t3.transform({
+        origin: [0, 0],
+        rotate: 180,
+        translate: [box.x2, box.y2],
+      });
+      this.t4.transform({
+        origin: [0, 0],
+        rotate: -90,
+        translate: [box.x, box.y2],
+      });
+    }
+    else {
+      this.t1.transform({
+        origin: this.t1.v1,
+        rotate: -90,
+      });
+      this.t2.transform({
+        origin: [0, 0],
+        rotate: 90,
+        translate: [box.x2, box.y],
+      });
+      this.t3.transform({
+        rotate: 180,
+        translateY: lengthA,
+      });
+      this.t4.transform({
+        translateY: lengthA,
+      });
+    }
+
+    this.transform({
+      origin: [size / 2, size / 2],
+      position: [this.x, this.y],
+    })
+  }
+
+  toggleArrangement({ animate = false } = {}) {
+    if (this.arrangement == 'TWISTED_SQUARES') {
+      this.arrangement = 'ALIGNED_SQUARES';
+
+      // if (!animate) {
+      //   this.resize();
+      //   return;
+      // }
+
+      this.t1.animate(1000, 0, 'now').transform({
+        origin: [this.triangle.lengthA, 0],
+        rotate: -90,
+      })
+      this.t4.animate(1000, 1400, 'after').transform({
+        origin: [0, this.triangle.lengthB],
+        translate: [this.triangle.lengthB, this.triangle.lengthA],
+      })
+      this.t4.animate(1000, 400, 'after').transform({
+        origin: [0, 0],
+        translate: [0, this.triangle.lengthA],
+      })
+      this.t3.animate(1000, 2800, 'after').transform({
+        origin: [0, 0],
+        rotate: 180,
+        translate: [this.triangle.lengthA, this.square.height()],
+      });
+      
+      // this.t1.animate(1000, 0, 'now').rotate(-90, ...this.triangle.v1);
+      // this.t4.animate(1000, 1400, 'after').rotate(90, ...this.triangle.v2);
+      // this.t4.animate(1000, 400, 'after').translate(-this.triangle.lengthB);
+      // this.t3.animate(1000, 2800, 'after').translate(-this.triangle.lengthB);
+    }
+    else {
+      this.arrangement = 'TWISTED_SQUARES';
+      // if (!animate) {
+      //   this.resize();
+      //   return;
+      // }
 
 
-  t4.rotate(-90, ...triangleSymbol.v1);
-  t3.rotate(90, ...triangleSymbol.v2);
+      this.t3.animate(1000, 0, 'now').transform({
+        origin: [0, 0],
+        rotate: 180,
+        translate: [this.square.width(), this.square.height()],
+      })
+      this.t4.animate(1000, 0, 'now').transform({
+        origin: [0, 0],
+        translate: [this.triangle.lengthB, this.triangle.lengthA],
+      })
+      this.t4.animate(1000, 400, 'after').transform({
+        origin: [0, this.triangle.lengthB],
+        rotate: -90,
+        translate: [this.triangle.lengthB, this.triangle.lengthA],
+      })
+      this.t1.animate(1000, 2800, 'after').transform({
+        origin: [this.triangle.lengthA, 0],
+      })
 
-  // let dx = box.x2 - new SVG.Point(triangleSymbol.v0).transform(t3.matrix()).x
-  // t3.translate(dx);
-  // t2.translate(dx);
+
+      // this.t3.animate(1000, 0, 'now').translate(this.triangle.lengthB);
+      // this.t4.animate(1000, 0, 'now').translate(this.triangle.lengthB);
+      // this.t4.animate(1000, 400, 'after').rotate(-90, ...this.triangle.v2);
+      // this.t1.animate(1000, 2800, 'after').rotate(90, ...this.triangle.v1);
+    }
+  }
+}
+SVG.extend(SVG.Container, {
+  proofSquare: function(triangle, x, y) {
+    return this.put(new SVG.ProofSquare(triangle, x, y));
+  }
 });
+
+
+let triangle = draw.rightTriangle(100, 100, 200).translate(200, 400).rotate(-90, 0, 0);
+let square = draw.proofSquare(triangle, 750, 250);
+
+draw.on("dblclick", () => {
+  square.toggleArrangement({animate: true})
+})
+
+
+
+
+// else {
+//   this.t1.transform({
+//     translateX: this.t1.lengthB,
+//   });
+//   this.t2.transform({
+//     rotate: 180,
+//     translateX: this.t2.lengthB,
+//   });
+//   this.t3.transform({
+//     origin: this.t3.v2,
+//     rotate: 90,
+//   });
+//   this.t4.transform({
+//     origin: [0, 0],
+//     rotate: -90,
+//     translate: [box.x, box.y2],
+//   });
+// }
+
+
+
+
+
+
+
+// let triangleSymbol = draw.symbol().rightTriangle(triangle.maxSize, triangle.lengthA, triangle.lengthB)
+// triangleSymbol.toggleResizeHandles().toggleRightAngleSymbol()
+// triangle.on('resize', () => {
+//   triangleSymbol.resize(triangle.lengthA, triangle.lengthB);
+// });
+
+
+// draw.on("dblclick", () => {
+//   let squareCenter = [750, 250];
+//   let squareSize = triangle.lengthA + triangle.lengthB;
+//   let square = draw.rect(squareSize, squareSize).attr({
+//     fill: LIGHT_GREEN,
+//     stroke: GREEN,
+//     'stroke-width': 4,
+//     'stroke-linejoin': 'round',
+//   }).transform({
+//     position: squareCenter,
+//   });
+//   let box;
+
+//   let t1  = draw.use(triangleSymbol);
+//   let t2  = draw.use(triangleSymbol);
+//   let t3  = draw.use(triangleSymbol);
+//   let t4  = draw.use(triangleSymbol);
+
+//   function resize() {
+//     squareSize = triangleSymbol.lengthA + triangleSymbol.lengthB;
+
+//     square.size(squareSize).transform({
+//       position: squareCenter,
+//     });
+
+//     box = square.tbox();
+
+//     t1.transform({
+//       origin: [0, 0],
+//       rotate: -90,
+//       translate: [box.x, box.y2],
+//     })
+//     t2.transform({
+//       translate: [box.x, box.y],
+//     });
+//     t3.transform({
+//       origin: [0, 0],
+//       rotate: 90,
+//       translate: [box.x2, box.y],
+//     });
+//     t4.transform({
+//       origin: [0, 0],
+//       rotate: 180,
+//       translate: [box.x2, box.y2],
+//     });
+//   }
+
+//   resize();
+//   triangleSymbol.on('resize', resize);
+
+
+//   t4.rotate(-90, ...triangleSymbol.v1);
+//   t3.rotate(90, ...triangleSymbol.v2);
+
+//   // let dx = box.x2 - new SVG.Point(triangleSymbol.v0).transform(t3.matrix()).x
+//   // t3.translate(dx);
+//   // t2.translate(dx);
+// });
