@@ -204,8 +204,8 @@ SVG.ProofSquare = class extends SVG.G {
     super();
 
     this.triangle = triangle
-    this.x = x;
-    this.y = y;
+    this._x = x;
+    this._y = y;
     this.arrangement = 'TWISTED_SQUARES';
 
     this.t1 = draw.rightTriangle(triangle.lengthA, triangle.lengthB).toggleResizeHandles().toggleRightAngleSymbol();
@@ -213,8 +213,8 @@ SVG.ProofSquare = class extends SVG.G {
     this.t3 = draw.rightTriangle(triangle.lengthA, triangle.lengthB).toggleResizeHandles().toggleRightAngleSymbol();
     this.t4 = draw.rightTriangle(triangle.lengthA, triangle.lengthB).toggleResizeHandles().toggleRightAngleSymbol();
 
-    this.size = this.triangle.lengthA + this.triangle.lengthB;
-    this.square = draw.rect(this.size, this.size).attr({
+    this._size = this.triangle.lengthA + this.triangle.lengthB;
+    this.square = draw.rect(this._size, this._size).attr({
       fill: LIGHT_GREEN,
       stroke: GREEN,
       'stroke-width': 4,
@@ -230,22 +230,24 @@ SVG.ProofSquare = class extends SVG.G {
   }
 
   resize() {
-    let lengthA = this.triangle.lengthA;
-    let lengthB = this.triangle.lengthB;
-    let size = lengthA + lengthB;
-    
-    this.square.size(size)
-    this.t1.resize(lengthA, lengthB);
-    this.t2.resize(lengthA, lengthB);
-    this.t3.resize(lengthA, lengthB);
-    this.t4.resize(lengthA, lengthB);
+    this.lengthA = this.triangle.lengthA;
+    this.lengthB = this.triangle.lengthB;
+    this.v0 = this.triangle.v0;
+    this.v1 = this.triangle.v1;
+    this.v2 = this.triangle.v2;
+    this._size = this.lengthA + this.lengthB;
+
+    this.square.size(this._size)
+    this.t1.resize(this.lengthA, this.lengthB);
+    this.t2.resize(this.lengthA, this.lengthB);
+    this.t3.resize(this.lengthA, this.lengthB);
+    this.t4.resize(this.lengthA, this.lengthB);
 
     let box = this.square.bbox();
 
     if (this.arrangement == 'TWISTED_SQUARES') {
       this.t1.transform({
         origin: [0, 0],
-        translate: [box.x, box.y],
       });
       this.t2.transform({
         origin: [0, 0],
@@ -265,7 +267,7 @@ SVG.ProofSquare = class extends SVG.G {
     }
     else {
       this.t1.transform({
-        origin: this.t1.v1,
+        origin: this.v1,
         rotate: -90,
       });
       this.t2.transform({
@@ -275,16 +277,16 @@ SVG.ProofSquare = class extends SVG.G {
       });
       this.t3.transform({
         rotate: 180,
-        translateY: lengthA,
+        translateY: this.lengthA,
       });
       this.t4.transform({
-        translateY: lengthA,
+        translateY: this.lengthA,
       });
     }
 
     this.transform({
-      origin: [size / 2, size / 2],
-      position: [this.x, this.y],
+      origin: [this._size / 2, this._size / 2],
+      position: [this._x, this._y],
     })
   }
 
@@ -297,24 +299,35 @@ SVG.ProofSquare = class extends SVG.G {
       //   return;
       // }
 
-      this.t1.animate(1000, 0, 'now').transform({
-        origin: [this.triangle.lengthA, 0],
+      let r0 = this.t1.animate(1000).transform({
+        origin: this.v1,
         rotate: -90,
-      })
-      this.t4.animate(1000, 1400, 'after').transform({
-        origin: [0, this.triangle.lengthB],
-        translate: [this.triangle.lengthB, this.triangle.lengthA],
-      })
-      this.t4.animate(1000, 400, 'after').transform({
-        origin: [0, 0],
-        translate: [0, this.triangle.lengthA],
-      })
-      this.t3.animate(1000, 2800, 'after').transform({
-        origin: [0, 0],
-        rotate: 180,
-        translate: [this.triangle.lengthA, this.square.height()],
       });
-      
+
+      let r1 = this.t4.animate(1000).transform({
+        origin: this.v2,
+        translate: [this.lengthB, this.lengthA],
+      });
+
+      let r2 = this.t4.animate(1000).transform({
+        origin: this.v0,
+        translate: [0, this.lengthA],
+      });
+
+      let r3 = this.t3.animate(1000).transform({
+        origin: this.v0,
+        rotate: 180,
+        translate: [this.lengthA, this._size],
+      });
+
+      let tb = new SVG.TimelineBuilder();
+      tb.appendFunction(() => { this.triangle.toggleResizeHandles() });
+      tb.append(r0, 100);
+      tb.append(r1, 400);
+      tb.append([r2, r3], 400);
+      tb.appendFunction(() => { this.triangle.toggleResizeHandles() });
+      tb.play();
+
       // this.t1.animate(1000, 0, 'now').rotate(-90, ...this.triangle.v1);
       // this.t4.animate(1000, 1400, 'after').rotate(90, ...this.triangle.v2);
       // this.t4.animate(1000, 400, 'after').translate(-this.triangle.lengthB);
@@ -327,25 +340,34 @@ SVG.ProofSquare = class extends SVG.G {
       //   return;
       // }
 
-
-      this.t3.animate(1000, 0, 'now').transform({
-        origin: [0, 0],
+      let r0 = this.t3.animate(1000).transform({
+        origin: this.v0,
         rotate: 180,
-        translate: [this.square.width(), this.square.height()],
-      })
-      this.t4.animate(1000, 0, 'now').transform({
-        origin: [0, 0],
-        translate: [this.triangle.lengthB, this.triangle.lengthA],
-      })
-      this.t4.animate(1000, 400, 'after').transform({
-        origin: [0, this.triangle.lengthB],
-        rotate: -90,
-        translate: [this.triangle.lengthB, this.triangle.lengthA],
-      })
-      this.t1.animate(1000, 2800, 'after').transform({
-        origin: [this.triangle.lengthA, 0],
-      })
+        translate: [this._size, this._size],
+      });
 
+      let r1 = this.t4.animate(1000).transform({
+        origin: this.v0,
+        translate: [this.lengthB, this.lengthA],
+      });
+
+      let r2 = this.t4.animate(1000).transform({
+        origin: this.v2,
+        rotate: -90,
+        translate: [this.lengthB, this.lengthA],
+      });
+
+      let r3 = this.t1.animate(1000).transform({
+        origin: this.v1,
+      });
+
+      let tb = new SVG.TimelineBuilder();
+      tb.appendFunction(() => { this.triangle.toggleResizeHandles() });
+      tb.append([r0, r1], 100);
+      tb.append(r2, 400);
+      tb.append(r3, 400);
+      tb.appendFunction(() => { this.triangle.toggleResizeHandles() });
+      tb.play();
 
       // this.t3.animate(1000, 0, 'now').translate(this.triangle.lengthB);
       // this.t4.animate(1000, 0, 'now').translate(this.triangle.lengthB);
