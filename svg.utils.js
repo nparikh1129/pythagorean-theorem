@@ -22,9 +22,10 @@ SVG.extend(SVG.Element, {
 });
 
 
-SVG.TimelineBuilder = class {
+SVG.TimelineBuilder = class extends EventTarget {
 
   constructor() {
+    super();
     this._timeline = new SVG.Timeline();
     this._time = 0;
   }
@@ -46,6 +47,12 @@ SVG.TimelineBuilder = class {
     this._time += delay;
     let runner = new SVG.Runner();
     runner.queue(func);
+    this._timeline.schedule(runner, this._time, 'absolute');
+  }
+
+  appendPause() {
+    let runner = new SVG.Runner();
+    runner.queue(() => this._timeline.pause());
     this._timeline.schedule(runner, this._time, 'absolute');
   }
 
