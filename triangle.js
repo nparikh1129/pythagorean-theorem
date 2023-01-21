@@ -202,10 +202,10 @@ SVG.extend(SVG.Container, {
 
 SVG.ProofSquare = class extends SVG.G {
 
-  constructor(triangle, x, y) {
+  constructor(triangle, x = 0, y = 0) {
     super();
 
-    this.triangle = triangle.toggleResizeHandles()
+    this.triangle = triangle;
     this.v0 = this.triangle.v0;
     this.v1 = this.triangle.v1;
     this.v2 = this.triangle.v2;
@@ -219,25 +219,20 @@ SVG.ProofSquare = class extends SVG.G {
     this.t3 = draw.rightTriangle(triangle.lengthA, triangle.lengthB);
     this.t4 = draw.rightTriangle(triangle.lengthA, triangle.lengthB);
 
-    this.initTriangle(this.t1);
-    this.initTriangle(this.t2);
-    this.initTriangle(this.t3);
-    this.initTriangle(this.t4);
-    this.add(this.t1).add(this.t2).add(this.t3).add(this.t4);
+    this.trianglesList = new SVG.List([this.t1, this.t2, this.t3, this.t4]);
+    this.trianglesList.each((t) => {
+      t.toggleResizeHandles().toggleRightAngleSymbol();
+      this.add(t);
+    })
 
-    this.square = null;
-    this._size = null;
-    this.initSquare()
+    this.square;
+    this._size;
+    this.initSquare();
     this.add(this.square);
+    this.square.back()
 
-    triangle.on('resize', () => { this.resize() });
-
-    // this.resize();
-  }
-
-  initTriangle(t) {
-    t.toggleResizeHandles().toggleRightAngleSymbol();
-    t.transform(this.triangle.matrix())
+    triangle.on('resize', () => { this.arrange() });
+    this.arrange();
   }
 
   initSquare() {
@@ -247,66 +242,94 @@ SVG.ProofSquare = class extends SVG.G {
       stroke: GREEN,
       'stroke-width': 4,
       'stroke-linejoin': 'round',
-      opacity: 0,
-    });
-    this.square.transform({
-      origin: [this._size / 2, this._size / 2],
-      position: [this._x, this._y],
     });
   }
 
-  animateTrianglesInitialPosition() {
+  // Assumes that the resize handles are off
+  animateProofSquareConstruction() {
+    // TODO: Remove when we do this externally
+    this.triangle.toggleResizeHandles()
+
+
+    this.trianglesList.each((t) => {
+      let m1 = this.matrix().inverse();
+      let m2 = this.triangle.matrix();
+      t.transform(m2.transform(m1));
+    });
+
+    this.square.attr({ opacity: 0 });
+    this.square.front();
     let box = this.square.tbox();
-    let trianglesList = new SVG.List([this.t1, this.t2, this.t3, this.t4]);
 
-    let r0 = this.t1.animate(1000).transform({
-      origin: [0, 0],
-      translate: [box.x, box.y],
-    });
-
-    let r1 = this.t2.animate(1000).transform({
-      origin: [0, 0],
-      rotate: 90,
-      translate: [box.x2, box.y],
-    })
-
-    let r2 = this.t3.animate(1000).transform({
-      origin: [0, 0],
-      rotate: 180,
-      translate: [box.x2, box.y2],
-    });
-    
-    let r3 = this.t4.animate(1000).transform({
+    let r0 = this.t4.animation(1000).transform({
       origin: [0, 0],
       rotate: -90,
       translate: [box.x, box.y2],
     });
 
-    let r4 = this.square.animate(1000).attr({ opacity: 1 });
-
-
-    let r5 = trianglesList.animate(1500).ease('<').attr({ opacity: 1});
-
-    let tb = new SVG.TimelineBuilder();
-
-    tb.append(r0, 100);
-    // tb.appendPause();
-    tb.append(r1, 400);
-    tb.append(r2, 400);
-    tb.append(r3, 400);
-    tb.append(r4, 400);
-    tb.appendFunction(() => { trianglesList.front().attr({ opacity: 0}) });
-    tb.append(r5, 400);
-    tb.appendFunction(() => { 
-      this.square.transform({});
-      trianglesList.transform({});
-      this.resize();
-      this.triangle.toggleResizeHandles()
+    let r1 = this.t1.animation(1000).transform({
+      origin: [0, 0],
+      translate: [box.x, box.y],
     });
+
+    let r2 = this.t2.animation(1000).transform({
+      origin: [0, 0],
+      rotate: 90,
+      translate: [box.x2, box.y],
+    })
+
+    let r3 = this.t3.animation(1000).transform({
+      origin: [0, 0],
+      rotate: 180,
+      translate: [box.x2, box.y2],
+    });
+
+    let r4 = this.square.animation(1500).attr({ opacity: 1 });
+
+    let r5 = () => { this.trianglesList.front().attr({ opacity: 0}) };
+
+    // let r6 = this.trianglesList.animate(1500).ease('<').attr({ opacity: 1});
+    let r6_0 = this.t4.animation(500).ease('<').attr({ opacity: 1});
+    let r6_1 = this.t1.animation(500).ease('<').attr({ opacity: 1});
+    let r6_2 = this.t2.animation(500).ease('<').attr({ opacity: 1});
+    let r6_3 = this.t3.animation(500).ease('<').attr({ opacity: 1});
+
+    let r7 = () => { 
+      this.square.transform({});
+      this.trianglesList.transform({});
+      this.arrange();
+      this.triangle.toggleResizeHandles();
+    };
+
+    let tb = new SVG.TimelineBuilder({
+      pause: true,
+      unpauseEvent: 'advance'
+    });
+    tb.appendPause();
+    tb.append(r0);
+    tb.append(r1);
+    tb.append(r2);
+    tb.append(r3);
+    tb.append(r4);
+    tb.appendFunction(r5);
+    tb.append(r6_0);
+    tb.append(r6_1);
+    tb.append(r6_2);
+    tb.append(r6_3, {pause: false});
+    tb.appendFunction(r7);
     tb.play();
   }
 
-  resize() {
+  setPosition(x, y) {
+    this._x = x;
+    this._y = y;
+    this.transform({
+      origin: [this._size / 2, this._size / 2],
+      position: [this._x, this._y],
+    })
+  }
+
+  arrange() {
     this.lengthA = this.triangle.lengthA;
     this.lengthB = this.triangle.lengthB;
     this.v0 = this.triangle.v0;
@@ -325,6 +348,7 @@ SVG.ProofSquare = class extends SVG.G {
     if (this.arrangement == 'TWISTED_SQUARES') {
       this.t1.transform({
         origin: [0, 0],
+        translate: [box.x, box.y],
       });
       this.t2.transform({
         origin: [0, 0],
@@ -404,11 +428,6 @@ SVG.ProofSquare = class extends SVG.G {
       tb.append([r2, r3], 400);
       tb.appendFunction(() => { this.triangle.toggleResizeHandles() });
       tb.play();
-
-      // this.t1.animate(1000, 0, 'now').rotate(-90, ...this.triangle.v1);
-      // this.t4.animate(1000, 1400, 'after').rotate(90, ...this.triangle.v2);
-      // this.t4.animate(1000, 400, 'after').translate(-this.triangle.lengthB);
-      // this.t3.animate(1000, 2800, 'after').translate(-this.triangle.lengthB);
     }
     else {
       this.arrangement = 'TWISTED_SQUARES';
@@ -445,11 +464,6 @@ SVG.ProofSquare = class extends SVG.G {
       tb.append(r3, 400);
       tb.appendFunction(() => { this.triangle.toggleResizeHandles() });
       tb.play();
-
-      // this.t3.animate(1000, 0, 'now').translate(this.triangle.lengthB);
-      // this.t4.animate(1000, 0, 'now').translate(this.triangle.lengthB);
-      // this.t4.animate(1000, 400, 'after').rotate(-90, ...this.triangle.v2);
-      // this.t1.animate(1000, 2800, 'after').rotate(90, ...this.triangle.v1);
     }
   }
 }
@@ -459,13 +473,24 @@ SVG.extend(SVG.Container, {
   }
 });
 
+draw.publish('advance')
+
 
 let triangle = draw.rightTriangle(100, 100, 200).translate(200, 400).rotate(-90, 0, 0);
 let square = draw.proofSquare(triangle, 750, 250);
 
-square.animateTrianglesInitialPosition()
+
+let tb = new SVG.TimelineBuilder({
+  pause: true,
+  unpauseEvent: 'advance'
+});
+tb.appendPause();
+
+// square.animateProofSquareConstruction();
+// // console.log('uh oh')
+// // square.toggleArrangement({animate: true});
 
 
 draw.on("dblclick", () => {
-  square.toggleArrangement({animate: true});
+  draw.broadcast('advance');
 })
