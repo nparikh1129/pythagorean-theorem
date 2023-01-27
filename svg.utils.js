@@ -45,11 +45,8 @@ SVG.extend(SVG.EventTarget, {
 
 SVG.TimelineBuilder = class extends SVG.EventTarget {
 
-  constructor({pause = false, unpauseEvent, name1} = {}) {
+  constructor({pause = false, unpauseEvent} = {}) {
     super();
-
-
-    this._name1 = name1;
 
     this.config = {
       pause: pause,
@@ -58,6 +55,7 @@ SVG.TimelineBuilder = class extends SVG.EventTarget {
     this._timeline = new SVG.Timeline();
     this._time = 0;
     this._active = false;
+    this._after;
 
     this._unpauseHandler = () => {
       if (this._active) {
@@ -69,12 +67,18 @@ SVG.TimelineBuilder = class extends SVG.EventTarget {
     }
   }
 
-  play() {
-    this.appendFunction(() => {
-      this.fire('timelineFinished');
-    });
+  _halt() {
+    this._active = false;
+    this._timeline.pause();
+  }
+
+  _proceed() {
     this._active = true;
     this._timeline.play();
+  }
+
+  play() {
+    this._proceed();
   }
 
   append(runner, {delay = 0, pause = this.config.pause} = {}) {
@@ -86,8 +90,8 @@ SVG.TimelineBuilder = class extends SVG.EventTarget {
     let duration = 0;
     for (let r of runner) {
       this._timeline.schedule(r, this._time, 'absolute');
-      duration = Math.max(duration, r.duration());
       r.active(true);
+      duration = Math.max(duration, r.duration());
     }
     this._time += duration;
 
@@ -96,6 +100,9 @@ SVG.TimelineBuilder = class extends SVG.EventTarget {
     }
   }
 
+  //TODO: Add an option to block the timeline (pause and make unpauseable) until after the function completes
+  // queue this in runner () => {this._halt(); func(); this._resume()}
+  // Then the default duration can be 0 removed as an option
   appendFunction(func, {delay = 0, pause = false, duration = 20} = {}) {
     this._time += delay;
     let runner = new SVG.Runner();
@@ -110,26 +117,40 @@ SVG.TimelineBuilder = class extends SVG.EventTarget {
 
   appendPause() {
     let runner = new SVG.Runner();
-    runner.queue(() => { this._timeline.pause(); console.log(this._name1, 'paused') });
+    runner.queue(() => { this._timeline.pause() });
     this._timeline.schedule(runner, this._time, 'absolute');
     this._time += 20;
   }
 
   appendTimelineBuilder(tb, {delay = 0, pause = false} = {}) {
     this.appendFunction(() => {
-      this._active = false;
-      this._timeline.pause();
-      let timelineFinishedHandler = () => {
-        this._active = true;
-        this._timeline.play();
-        tb.off('timelineFinished', timelineFinishedHandler);
-      }
-      tb.on('timelineFinished', timelineFinishedHandler);
+      this._halt()
+      tb.appendFunction(() => this._proceed());
       tb.play();
-    }, { delay: delay, pause: pause, duration: tb._time + 20});
+    }, { delay: delay, pause: pause});
   }
 
-
-
   
+  // appendFromTimelineBuilder(tb, {delay = 0, pause = false} = {}) {
+  //   this._time += delay;
+
+  //   let events = [];
+  //   for (let r of tb._timeline._runners) {
+  //     events.push({
+  //       start: r.start,
+  //       runner: r.runner,
+  //     });
+  //   }
+  //   for (let e of events) {
+  //     let runner = e.runner;
+  //     let time = this._time + e.start;
+  //     this._timeline.schedule(runner, time, 'absolute');
+  //   }
+  //   this._time += tb._time;
+
+  //   if (pause) {
+  //     this.appendPause();
+  //   }
+  // }
+
 }

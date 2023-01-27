@@ -12,7 +12,7 @@ const DARK_GRAY = '#3a3a3c';
 
 
 
-let draw = SVG().addTo('body').size(window.screen.availWidth, window.screen.availHeight).css({ 'background-color': '#1c1c1e' })
+let draw = SVG().addTo('body').size(window.screen.availWidth, window.screen.availHeight).css({ 'background-color': '#303030' })
 // TODO: Handle onResize event
 
 
@@ -263,7 +263,8 @@ SVG.ProofSquare = class extends SVG.G {
       stroke: GREEN,
       'stroke-width': 4,
       'stroke-linejoin': 'round',
-    }).cx(0).cy(0);
+    });
+    this.square.cx(0).cy(0);
   }
 
   arrange() {
@@ -328,6 +329,7 @@ SVG.ProofSquare = class extends SVG.G {
   }
 
   copyShapes() {
+    let draw = this.root();
     let shapes = {};
 
     let size = this.triangle.lengthA + this.triangle.lengthB;
@@ -336,7 +338,7 @@ SVG.ProofSquare = class extends SVG.G {
       stroke: GREEN,
       'stroke-width': 4,
       'stroke-linejoin': 'round',
-    }).cx(0).cy(0).hide();
+    }).hide();
 
     shapes.t1 = draw.rightTriangle(this.triangle.lengthA, this.triangle.lengthB);
     shapes.t2 = draw.rightTriangle(this.triangle.lengthA, this.triangle.lengthB);
@@ -348,8 +350,6 @@ SVG.ProofSquare = class extends SVG.G {
       t.toggleResizeHandles().toggleRightAngleSymbol();
       t.hide();
     });
-
-    return shapes;
   }
 }
 SVG.extend(SVG.Container, {
@@ -358,63 +358,6 @@ SVG.extend(SVG.Container, {
   }
 });
 
-
-class TimelineCoordinator {
-  
-
-  constructor() {
-    this._startId = 'TLC_START';
-    this._curr = { vars: { id: this._startId } };
-    this._order = [this._startId, 'triangleSizing', 'squareConstruction'];
-    this._transitions = {
-      'triangleSizing': buildTriangleSizingTimeline,
-      'squareConstruction': buildSquareConstructionTimeline,
-    };
-  }
-
-  started(tl) {
-    this._curr = tl;
-    console.log(this._curr.vars.id, 'started')
-  }
-
-  completed(tl) {
-    console.log(this._curr.vars.id, 'completed');
-    let currIndex = this._order.indexOf(this._curr.vars.id);
-    let nextId = this._order[currIndex + 1];
-    if (!nextId) {
-      console.log('timeline sequence complete');
-      return;
-    }
-    this._transitions[nextId]();
-  }
-
-  resume() {
-    if (this._curr) {
-      this._curr.resume();
-      console.log(this._curr.vars.id, 'resumed');
-    }
-    else {
-      console.log('resume ignored');
-    }
-  }
-
-  reverse() {
-    if (this._curr) {
-      this._curr.reverse();
-      console.log(this._curr.vars.id, 'reversed');
-    }
-    else {
-      console.log('reverse ignored');
-    }
-  }
-
-  start() {
-    console.log('TimelineCoordinator started');
-    this.completed(this._curr);
-  }
-
-
-}
 
 
 
@@ -426,201 +369,282 @@ let triangle = draw.rightTriangle(100, 100, 200).transform({
   translateX: canvasCX - 50,
   translateY: canvasCY + 50,
 })
+triangle.node.id = 'triangle';
 
-let proofSquare = draw.proofSquare(triangle).back().hide();
+let proofSquare = draw.proofSquare(triangle).back()
+proofSquare.translate(200, 400);
 
-
-
-
-// TODO: Should timelines be built deactivated?
-
-let buildTriangleSizingTimeline = function() {
-
-  let tl = gsap.timeline({ id: 'triangleSizing' });
-  tl.eventCallback('onStart', () => tlCoord.started(tl));
-  tl.eventCallback('onComplete', () => tlCoord.completed(tl));
-
-  tl.addPause("+=0.005");
-  tl.to(triangle.getResizeHandles(), {
-    opacity: 0,
-    duration: 0.75,
-    onComplete: () => triangle.setResizeHandlesVisible(false),
-  });
-  tl.to(triangle._rightAngleSymbol.node, {
-    opacity: 0,
-    duration: 0.75,
-  }, "<");
-}
-
-
-let buildSquareConstructionTimeline = function() {
-  let tl = gsap.timeline({ id: 'squareConstruction' });
-  tl.eventCallback('onStart', () => tlCoord.started(tl));
-  tl.eventCallback('onComplete', () => squareConstruction());
-
-  let ps = proofSquare.copyShapes();
-
-  let canvasCX = window.visualViewport.width / 2; 
-  let canvasCY = window.visualViewport.height / 2;
-  ps.square.transform({
-    translateX: canvasCX,
-    translateY: canvasCY,
-  });
-  ps.square.attr({ opacity: 0 });
-  ps.square.front();
-  ps.square.show();
-  let box = ps.square.tbox();
-
-  tl.addPause("+=0.005");
-  tl.to(triangle.node, {
-    translateX: box.x,
-    translateY: box.y2,
-    duration: 1,
-  });
-
-  let squareConstruction = function() {
-
-    let m = triangle.matrix();
-    ps.trianglesList.each((t) => {
-      t.transform(m);
-      t.show();
-    });
-    triangle.hide();
-
-    tl.eventCallback('onComplete', () => tlCoord.completed(tl));
-
-    tl.addPause("+=0.005");
-    tl.to(ps.t1.node, {
-      onStart: () => ps.t1.front(),
-      rotate: "+=90",
-      translateX: box.x,
-      translateY: box.y,
-      duration: 2,
-      ease: "power.inOut",
-    });
-    tl.addPause();
-    tl.to(ps.t2.node, {
-      onStart: () => ps.t2.front(),
-      rotate: "-=180",
-      translateX: box.x2,
-      translateY: box.y,
-      duration: 3,
-      ease: "power.inOut",
-    });
-    tl.addPause();
-    tl.to(ps.t3.node, {
-      onStart: () => ps.t3.front(),
-      rotate: "-=90",
-      translateX: box.x2,
-      translateY: box.y2,
-      duration: 2,
-      ease: "power.inOut",
-    });
-    tl.addPause();
-    tl.to(ps.square.node, {
-      onStart: () => ps.square.front(),
-      opacity: 1,
-      duration: 1.5,
-      ease: "power2.in",
-    });
-    tl.addPause();
-    tl.add(() => {
-      if (!tl.reversed())
-        ps.trianglesList.attr({ opacity: 0 }).front();
-      else {
-        ps.trianglesList.forEach((t) => t.node.style.opacity = 1);
-        ps.trianglesList.back();
-      }
-    });
-    tl.to(ps.t4.node, {
-      opacity: 1,
-      duration: 1,
-    });
-    tl.addPause();
-    tl.to(ps.t1.node, {
-      opacity: 1,
-      duration: 1,
-    });
-    tl.addPause();
-    tl.to(ps.t2.node, {
-      opacity: 1,
-      duration: 1,
-    });
-    tl.addPause();
-    tl.to(ps.t3.node, {
-      opacity: 1,
-      duration: 1,
-    });
-    tl.add(() => {
-    });
-
-
-    tl.addPause("+=0.005", () => console.log("squareConstruction: pause end"));
-    tl.addPause("+=0.005", () => console.log("squareConstruction: pause end...really"));
-  }
-}
-
-
-
-
-
-
-
-
-
-let tlCoord = new TimelineCoordinator();
 draw.on("dblclick", () => {
-  console.log('coord sending resume');
-  tlCoord.resume();
+  let shapes = proofSquare.copyShapes();
 });
 
-// let button = draw.rect(100, 100).fill('blue');
-// button.on("click", () => {
-//   console.log('coord sending reverse');
-//   tlCoord.reverse();
+
+
+
+
+// SVG.ProofSquare = class extends SVG.G {
+
+//   constructor(triangle, x = 0, y = 0) {
+//     super();
+
+//     this.triangle = triangle;
+//     this.v0 = this.triangle.v0;
+//     this.v1 = this.triangle.v1;
+//     this.v2 = this.triangle.v2;
+
+//     this._x = x;
+//     this._y = y;
+//     this.arrangement = 'TWISTED_SQUARES';
+
+//     this.t1 = draw.rightTriangle(triangle.lengthA, triangle.lengthB);
+//     this.t2 = draw.rightTriangle(triangle.lengthA, triangle.lengthB);
+//     this.t3 = draw.rightTriangle(triangle.lengthA, triangle.lengthB);
+//     this.t4 = draw.rightTriangle(triangle.lengthA, triangle.lengthB);
+
+//     this.trianglesList = new SVG.List([this.t1, this.t2, this.t3, this.t4]);
+//     this.trianglesList.each((t) => {
+//       t.toggleResizeHandles().toggleRightAngleSymbol();
+//       this.add(t);
+//     })
+
+//     this.square;
+//     this._size;
+//     this.initSquare();
+//     this.add(this.square);
+//     this.square.back()
+
+//     triangle.on('resize', () => { this.arrange() });
+//     this.arrange();
+//   }
+
+//   initSquare() {
+//     this._size = this.triangle.lengthA + this.triangle.lengthB;
+//     this.square = draw.rect(this._size, this._size).attr({
+//       fill: LIGHT_GREEN,
+//       stroke: GREEN,
+//       'stroke-width': 4,
+//       'stroke-linejoin': 'round',
+//     });
+//   }
+
+//   // Assumes that the resize handles are off
+//   squareConstructionTB(tb) {
+//     this.trianglesList.each((t) => {
+//       let m1 = this.matrix().inverse();
+//       let m2 = this.triangle.matrix();
+//       t.transform(m2.transform(m1));
+//     });
+
+//     this.square.attr({ opacity: 0 });
+//     this.square.front();
+
+//     let box = this.square.tbox();
+
+//     this.show();
+
+//     let r0 = this.t4.animation(1000).transform({
+//       origin: [0, 0],
+//       rotate: -90,
+//       translate: [box.x, box.y2],
+//     });
+
+//     let r1 = this.t1.animation(1000).transform({
+//       origin: [0, 0],
+//       translate: [box.x, box.y],
+//     });
+
+//     let r2 = this.t2.animation(1000).transform({
+//       origin: [0, 0],
+//       rotate: 90,
+//       translate: [box.x2, box.y],
+//     });
+
+//     let r3 = this.t3.animation(1000).transform({
+//       origin: [0, 0],
+//       rotate: 180,
+//       translate: [box.x2, box.y2],
+//     });
+
+//     let r4 = this.square.animation(1500).attr({ opacity: 1 });
+
+//     let r5 = () => { this.trianglesList.front().attr({ opacity: 0}) };
+
+//     // let r6 = this.trianglesList.animate(1500).ease('<').attr({ opacity: 1});
+//     let r6_0 = this.t4.animation(500).ease('<').attr({ opacity: 1});
+//     let r6_1 = this.t1.animation(500).ease('<').attr({ opacity: 1});
+//     let r6_2 = this.t2.animation(500).ease('<').attr({ opacity: 1});
+//     let r6_3 = this.t3.animation(500).ease('<').attr({ opacity: 1});
+
+//     let r7 = () => { 
+//       this.square.transform({});
+//       this.trianglesList.transform({});
+//       this.arrange();
+//       this.triangle.toggleResizeHandles();
+//     };
+
+//     tb.append(r0);
+//     tb.append(r1);
+//     tb.append(r2);
+//     tb.append(r3);
+//     tb.append(r4);
+//     tb.appendFunction(r5);
+//     tb.append(r6_0);
+//     tb.append(r6_1);
+//     tb.append(r6_2);
+//     tb.append(r6_3, {pause: false});
+//     tb.appendFunction(r7);
+//     return tb;
+//   }
+
+//   setPosition(x, y) {
+//     this._x = x;
+//     this._y = y;
+//     this.transform({
+//       origin: [this._size / 2, this._size / 2],
+//       position: [this._x, this._y],
+//     })
+//   }
+
+//   arrange() {
+//     this.lengthA = this.triangle.lengthA;
+//     this.lengthB = this.triangle.lengthB;
+//     this.v0 = this.triangle.v0;
+//     this.v1 = this.triangle.v1;
+//     this.v2 = this.triangle.v2;
+
+//     this.t1.resize(this.lengthA, this.lengthB);
+//     this.t2.resize(this.lengthA, this.lengthB);
+//     this.t3.resize(this.lengthA, this.lengthB);
+//     this.t4.resize(this.lengthA, this.lengthB);
+
+//     this._size = this.lengthA + this.lengthB;
+//     this.square.size(this._size)
+//     let box = this.square.bbox();
+
+//     if (this.arrangement == 'TWISTED_SQUARES') {
+//       this.t1.transform({
+//         origin: [0, 0],
+//         translate: [box.x, box.y],
+//       });
+//       this.t2.transform({
+//         origin: [0, 0],
+//         rotate: 90,
+//         translate: [box.x2, box.y],
+//       });
+//       this.t3.transform({
+//         origin: [0, 0],
+//         rotate: 180,
+//         translate: [box.x2, box.y2],
+//       });
+//       this.t4.transform({
+//         origin: [0, 0],
+//         rotate: -90,
+//         translate: [box.x, box.y2],
+//       });
+//     }
+//     else {
+//       this.t1.transform({
+//         origin: this.v1,
+//         rotate: -90,
+//       });
+//       this.t2.transform({
+//         origin: [0, 0],
+//         rotate: 90,
+//         translate: [box.x2, box.y],
+//       });
+//       this.t3.transform({
+//         rotate: 180,
+//         translateY: this.lengthA,
+//       });
+//       this.t4.transform({
+//         translateY: this.lengthA,
+//       });
+//     }
+
+//     this.transform({
+//       origin: [this._size / 2, this._size / 2],
+//       position: [this._x, this._y],
+//     })
+//   }
+
+//   toggleArrangement({ animate = false } = {}) {
+//     if (this.arrangement == 'TWISTED_SQUARES') {
+//       this.arrangement = 'ALIGNED_SQUARES';
+
+//       // if (!animate) {
+//       //   this.resize();
+//       //   return;
+//       // }
+
+//       let r0 = this.t1.animate(1000).transform({
+//         origin: this.v1,
+//         rotate: -90,
+//       });
+
+//       let r1 = this.t4.animate(1000).transform({
+//         origin: this.v2,
+//         translate: [this.lengthB, this.lengthA],
+//       });
+
+//       let r2 = this.t4.animate(1000).transform({
+//         origin: this.v0,
+//         translate: [0, this.lengthA],
+//       });
+
+//       let r3 = this.t3.animate(1000).transform({
+//         origin: this.v0,
+//         rotate: 180,
+//         translate: [this.lengthA, this._size],
+//       });
+
+//       let tb = new SVG.TimelineBuilder();
+//       tb.appendFunction(() => { this.triangle.toggleResizeHandles() });
+//       tb.append(r0, 100);
+//       tb.append(r1, 400);
+//       tb.append([r2, r3], 400);
+//       tb.appendFunction(() => { this.triangle.toggleResizeHandles() });
+//       tb.play();
+//     }
+//     else {
+//       this.arrangement = 'TWISTED_SQUARES';
+//       // if (!animate) {
+//       //   this.resize();
+//       //   return;
+//       // }
+
+//       let r0 = this.t3.animate(1000).transform({
+//         origin: this.v0,
+//         rotate: 180,
+//         translate: [this._size, this._size],
+//       });
+
+//       let r1 = this.t4.animate(1000).transform({
+//         origin: this.v0,
+//         translate: [this.lengthB, this.lengthA],
+//       });
+
+//       let r2 = this.t4.animate(1000).transform({
+//         origin: this.v2,
+//         rotate: -90,
+//         translate: [this.lengthB, this.lengthA],
+//       });
+
+//       let r3 = this.t1.animate(1000).transform({
+//         origin: this.v1,
+//       });
+
+//       let tb = new SVG.TimelineBuilder();
+//       tb.appendFunction(() => { this.triangle.toggleResizeHandles() });
+//       tb.append([r0, r1], 100);
+//       tb.append(r2, 400);
+//       tb.append(r3, 400);
+//       tb.appendFunction(() => { this.triangle.toggleResizeHandles() });
+//       tb.play();
+//     }
+//   }
+// }
+// SVG.extend(SVG.Container, {
+//   proofSquare: function(triangle, x, y) {
+//     return this.put(new SVG.ProofSquare(triangle, x, y));
+//   }
 // });
-
-
-
-
-tlCoord.start();
-
-
-
-
-
-
-
-
-
-
-// let squareConstruction = new SVG.TimelineBuilder({ pause: true, unpauseEvent: 'advance' });
-
-
-
-
-// draw.publish('advance')
-// draw.on("dblclick", () => {
-//   draw.broadcast('advance');
-// })
-
-
-// let tb = new SVG.TimelineBuilder({ pause: true, unpauseEvent: 'advance' });
-// tb.appendPause();
-// tb.appendFunction(() => {
-//   triangle.toggleResizeHandles();
-//   triangle.front()
-// });
-// tb.append(triangle.animation(1000).translate(-150, 0));
-
-
-
-// tb.appendFunction(() => { proofSquare.squareConstructionTB(squareConstruction) });
-// tb.appendTimelineBuilder(squareConstruction);
-// tb.play();
-
-
-// square.toggleArrangement({animate: true});
-
-
-
