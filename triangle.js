@@ -365,10 +365,12 @@ class TimelineCoordinator {
   constructor() {
     this._startId = 'TLC_START';
     this._curr = { vars: { id: this._startId } };
-    this._order = [this._startId, 'triangleSizing', 'squareConstruction'];
+    this.data = {};
+    this._order = [this._startId, "triangleSizing", "squareConstruction", "alignedArrangment"];
     this._transitions = {
-      'triangleSizing': buildTriangleSizingTimeline,
-      'squareConstruction': buildSquareConstructionTimeline,
+      "triangleSizing": buildTriangleSizingTimeline,
+      "squareConstruction": buildSquareConstructionTimeline,
+      "alignedArrangment": buildAlignedArrangmentTimeline,
     };
   }
 
@@ -381,10 +383,11 @@ class TimelineCoordinator {
     console.log(this._curr.vars.id, 'completed');
     let currIndex = this._order.indexOf(this._curr.vars.id);
     let nextId = this._order[currIndex + 1];
-    if (!nextId) {
+    if (nextId == this._startId) {
       console.log('timeline sequence complete');
       return;
     }
+    console.log(nextId);
     this._transitions[nextId]();
   }
 
@@ -459,6 +462,7 @@ let buildSquareConstructionTimeline = function() {
   tl.eventCallback('onComplete', () => squareConstruction());
 
   let ps = proofSquare.copyShapes();
+  tlCoord.data.ps = ps;
 
   let canvasCX = window.visualViewport.width / 2; 
   let canvasCY = window.visualViewport.height / 2;
@@ -552,12 +556,42 @@ let buildSquareConstructionTimeline = function() {
       duration: 1,
     });
     tl.add(() => {
+      //
     });
-
-
-    tl.addPause("+=0.005", () => console.log("squareConstruction: pause end"));
-    tl.addPause("+=0.005", () => console.log("squareConstruction: pause end...really"));
   }
+}
+
+
+let buildAlignedArrangmentTimeline = function() {
+
+  let tl = gsap.timeline({ id: 'alignedArrangement' });
+  tl.eventCallback('onStart', () => tlCoord.started(tl));
+  tl.eventCallback('onComplete', () => tlCoord.completed(tl));
+
+  let ps = tlCoord.data.ps;
+  // proofSquare.arrangement = 'ALIGNED_SQUARES';
+
+  tl.addPause("+=0.005");
+
+  tl.to(ps.t1.node, {
+    transformOrigin: "100% 0%",
+    rotate: "-=90",
+    duration: 1,
+  });
+  tl.addPause();
+  tl.to(ps.t4.node, {
+    transformOrigin: "0% 100%",
+    rotate: "+=90",
+    duration: 1,
+  });
+  tl.addPause();
+  tl.to([ps.t3.node, ps.t4.node], {
+    translateX: `-=${triangle.lengthB}`,
+    duration: 1,
+  });
+
+  tl.addPause("+=0.005", () => console.log('alignedArrangement paused'));
+  tl.addPause("+=0.005");
 }
 
 
