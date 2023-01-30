@@ -10,9 +10,25 @@ const LIGHT_BLUE = '#b2d7ff';
 const LIGHT_GREEN = '#aeeabd';
 const DARK_GRAY = '#3a3a3c';
 
+const LABEL_FONT = {
+  family: 'Helvetica',
+  size: 40,
+  anchor: 'middle',
+  "alignment-baseline": "middle",
+  fill: "white",
+};
+
+const EXPONENT_FONT = Object.assign({}, LABEL_FONT, {
+  size: 22,
+  'baseline-shift': "super",
+});
 
 
-let draw = SVG().addTo('body').size(window.screen.availWidth, window.screen.availHeight).css({ 'background-color': '#1c1c1e' })
+
+let draw = SVG()
+  .addTo('body')
+  .size(window.screen.availWidth, window.screen.availHeight)
+  .css({ 'background-color': '#1c1c1e' });
 // TODO: Handle onResize event
 
 
@@ -25,6 +41,12 @@ SVG.RightTriangle = class extends SVG.G {
 
     this._lineA = draw.resizableLine(maxSize, lengthA, BLUE);
     this._lineB = draw.resizableLine(maxSize, lengthB, RED).rotate(90, 0, 0);
+
+
+    this.labelA = draw.plain('a').font(LABEL_FONT).rotate(90, 0, 0).translate(lengthA / 2, -30);
+    this.labelB = draw.plain('b').font(LABEL_FONT).rotate(90, 0, 0).translate(-30, lengthB / 2);
+    this.labelC = draw.plain('c').font(LABEL_FONT).rotate(90, 0, 0).translate((lengthA / 2) + 20, (lengthB / 2) + 20);
+
 
     this._verts = [
       [0, 0],
@@ -55,11 +77,16 @@ SVG.RightTriangle = class extends SVG.G {
       this.resize(this._lineA.length, this._lineB.length);
     });
 
+
     // Arrangement
+    this.add(this.labelA);
+    this.add(this.labelB);
+    this.add(this.labelC);
     this.add(this._triangle);
     this.add(this._rightAngleSymbol);
     this.add(this._lineA);
     this.add(this._lineB);
+    
   }
 
   get lengthA() {
@@ -89,6 +116,20 @@ SVG.RightTriangle = class extends SVG.G {
     this._verts[2][1] = this._lineB.length;
     this._triangle.plot(this._verts);
 
+    let m = this.labelA.matrix()
+    m.e = lengthA/2;
+    this.labelA.transform(m);
+
+    m = this.labelB.matrix()
+    m.f = lengthB/2;
+    this.labelB.transform(m);
+
+    m = this.labelC.matrix()
+    m.e = (lengthA / 2) + 20;
+    m.f = (lengthB / 2) + 20;
+    this.labelC.transform(m);
+
+
     if (this._lineA._resizeHandle.bbox().intersectsWith(this._rightAngleSymbol.bbox()) ||
         this._lineB._resizeHandle.bbox().intersectsWith(this._rightAngleSymbol.bbox())) {
       this._rightAngleSymbol.attr({stroke: '0'});
@@ -99,10 +140,10 @@ SVG.RightTriangle = class extends SVG.G {
     this.fire('resize');
   }
 
-  toggleResizeHandles() {
-    this._lineA.toggleResizeHandle();
-    this._lineB.toggleResizeHandle();
-    return this;
+  getResizeHandles() {
+    let handleA = this._lineA._resizeHandle.node;
+    let handleB = this._lineB._resizeHandle.node;
+    return [handleA, handleB];
   }
 
   setResizeHandlesVisible(visible) {
@@ -114,22 +155,53 @@ SVG.RightTriangle = class extends SVG.G {
       this._lineA.setResizeHandleVisible(false);
       this._lineB.setResizeHandleVisible(false);
     }
+    return this;
   }
 
-  getResizeHandles() {
-    let handleA = this._lineA._resizeHandle.node;
-    let handleB = this._lineB._resizeHandle.node;
-    return [handleA, handleB];
+  getRightAngleSymbol() {
+    return this._rightAngleSymbol.node;
   }
 
-  toggleRightAngleSymbol() {
-    if (this._rightAngleSymbol.visible()) {
-      this._rightAngleSymbol.hide();
-    }
-    else {
+  setRightAngleSymbolVisible(visible) {
+    if (visible) {
       this._rightAngleSymbol.show();
     }
+    else {
+      this._rightAngleSymbol.hide();
+    }
     return this;
+  }
+
+  getLabels() {
+    return [this.labelA.node, this.labelB.node, this.labelC.node];
+  }
+
+  setLabelsVisible(visible) {
+    if (visible) {
+      this.labelA.show();
+      this.labelB.show();
+      this.labelC.show();
+    }
+    else {
+      this.labelA.hide();
+      this.labelB.hide();
+      this.labelC.hide();
+    }
+    return this;
+  }
+
+  getNonPlainElements() {
+    return [].concat(
+      this.getResizeHandles(),
+      this.getRightAngleSymbol(),
+      this.getLabels()
+    );
+  }
+
+  setNonPlainElementsVisible(visible) {
+    this.getNonPlainElements().forEach((e) => {
+      e.style.display = "none"
+    });
   }
 }
 SVG.extend(SVG.Container, {
@@ -200,16 +272,6 @@ SVG.ResizableLine = class extends SVG.G {
     this._line.attr('x2', newLength);
   }
 
-  toggleResizeHandle() {
-    if (this._resizeHandle.visible()) {
-      this._resizeHandle.hide();
-    }
-    else {
-      this._resizeHandle.show();
-    }
-    return this;
-  }
-
   setResizeHandleVisible(visible) {
     visible ? this._resizeHandle.show() : this._resizeHandle.hide();
     return this;
@@ -242,7 +304,7 @@ SVG.ProofSquare = class extends SVG.G {
 
     this.trianglesList = new SVG.List([this.t1, this.t2, this.t3, this.t4]);
     this.trianglesList.each((t) => {
-      t.toggleResizeHandles().toggleRightAngleSymbol();
+      t.setNonPlainElementsVisible(false);
       this.add(t);
     })
 
@@ -344,10 +406,13 @@ SVG.ProofSquare = class extends SVG.G {
     shapes.t4 = draw.rightTriangle(this.triangle.lengthA, this.triangle.lengthB);
 
     shapes.trianglesList = new SVG.List([shapes.t1, shapes.t2, shapes.t3, shapes.t4]);
+    shapes.trianglesNodes = [];
     shapes.trianglesList.each((t) => {
-      t.toggleResizeHandles().toggleRightAngleSymbol();
+      t.setNonPlainElementsVisible(false);
       t.hide();
+      shapes.trianglesNodes.push(t.node);
     });
+
 
     return shapes;
   }
@@ -376,6 +441,7 @@ class TimelineCoordinator {
 
   started(tl) {
     this._curr = tl;
+    tl.timeScale(1);
     console.log(this._curr.vars.id, 'started')
   }
 
@@ -391,13 +457,28 @@ class TimelineCoordinator {
     this._transitions[nextId]();
   }
 
-  resume() {
+  play() {
     if (this._curr) {
-      this._curr.resume();
+      this._curr.play();
       console.log(this._curr.vars.id, 'resumed');
     }
     else {
-      console.log('resume ignored');
+      console.log('play ignored');
+    }
+  }
+
+  next() {
+    console.log(this._curr.currentLabel(), this._curr.nextLabel(), this._curr.paused())
+    let label = this._curr.nextLabel();
+    if (label) {
+      this._curr.seek(label, false);
+    }
+  }
+
+  prev() {
+    let label = this._curr.previousLabel();
+    if (label) {
+      this._curr.seek(label, false);
     }
   }
 
@@ -423,14 +504,16 @@ class TimelineCoordinator {
 
 let canvasCX = window.visualViewport.width / 2; 
 let canvasCY = window.visualViewport.height / 2;
-let triangle = draw.rightTriangle(100, 100, 200).transform({
+let triangle = draw.rightTriangle(150, 150, 300).transform({
   origin: [0, 0],
   rotate: -90,
-  translateX: canvasCX - 50,
+  translateX: canvasCX - 150,
   translateY: canvasCY + 50,
-})
+}).setLabelsVisible(false);
 
 let proofSquare = draw.proofSquare(triangle).back().hide();
+
+
 
 
 
@@ -443,16 +526,39 @@ let buildTriangleSizingTimeline = function() {
   tl.eventCallback('onStart', () => tlCoord.started(tl));
   tl.eventCallback('onComplete', () => tlCoord.completed(tl));
 
-  tl.addPause("+=0.005");
-  tl.to(triangle.getResizeHandles(), {
+
+  tl.addPause("+=1");
+  tl.addLabel("key1");
+  tl.set(triangle.getLabels(), {
     opacity: 0,
-    duration: 0.75,
-    onComplete: () => triangle.setResizeHandlesVisible(false),
   });
-  tl.to(triangle._rightAngleSymbol.node, {
+  tl.to(triangle.labelA.node, {
+    opacity: 1,
+    display: "block",
+    duration: 1,
+  });
+  tl.addPause();
+  tl.addLabel("key2");
+  tl.to(triangle.labelB.node, {
+    opacity: 1,
+    display: "block",
+    duration: 1,
+  });
+  tl.addPause();
+  tl.addLabel("key3");
+  tl.to(triangle.labelC.node, {
+    opacity: 1,
+    display: "block",
+    duration: 1,
+  });
+  tl.addPause();
+  tl.addLabel("key4");
+  tl.to(triangle.getNonPlainElements(), {
     opacity: 0,
-    duration: 0.75,
-  }, "<");
+    display: "none",
+    duration: 1,
+  });
+  tl.addLabel("key5");
 }
 
 
@@ -475,89 +581,94 @@ let buildSquareConstructionTimeline = function() {
   ps.square.show();
   let box = ps.square.tbox();
 
-  tl.addPause("+=0.005");
+  tl.addPause("+=1");
+  tl.addLabel("key1");
   tl.to(triangle.node, {
     translateX: box.x,
     translateY: box.y2,
     duration: 1,
   });
+  tl.addLabel("key2");
 
   let squareConstruction = function() {
 
     let m = triangle.matrix();
-    ps.trianglesList.each((t) => {
-      t.transform(m);
-      t.show();
-    });
+    ps.trianglesList.transform(m).show();
     triangle.hide();
 
     tl.eventCallback('onComplete', () => tlCoord.completed(tl));
 
-    tl.addPause("+=0.005");
+    tl.addPause("+=1");
     tl.to(ps.t1.node, {
       onStart: () => ps.t1.front(),
       rotate: "+=90",
       translateX: box.x,
       translateY: box.y,
-      duration: 2,
+      duration: 1.5,
       ease: "power.inOut",
     });
     tl.addPause();
+    tl.addLabel("key3");
     tl.to(ps.t2.node, {
       onStart: () => ps.t2.front(),
       rotate: "-=180",
       translateX: box.x2,
       translateY: box.y,
-      duration: 3,
+      duration: 2,
       ease: "power.inOut",
     });
     tl.addPause();
+    tl.addLabel("key4");
     tl.to(ps.t3.node, {
       onStart: () => ps.t3.front(),
       rotate: "-=90",
       translateX: box.x2,
       translateY: box.y2,
-      duration: 2,
+      duration: 1.5,
       ease: "power.inOut",
     });
     tl.addPause();
+    tl.addLabel("key5");
     tl.to(ps.square.node, {
       onStart: () => ps.square.front(),
-      opacity: 1,
+      attr: {
+        opacity: 1,
+      },
       duration: 1.5,
       ease: "power2.in",
     });
     tl.addPause();
+    tl.addLabel("key6");
     tl.add(() => {
       if (!tl.reversed())
         ps.trianglesList.attr({ opacity: 0 }).front();
       else {
-        ps.trianglesList.forEach((t) => t.node.style.opacity = 1);
-        ps.trianglesList.back();
+        ps.trianglesList.attr({ opacity: 1 }).back();
       }
     });
     tl.to(ps.t4.node, {
-      opacity: 1,
+      attr: {opacity: 1},
       duration: 1,
     });
     tl.addPause();
+    tl.addLabel("key7");
     tl.to(ps.t1.node, {
-      opacity: 1,
+      attr: {opacity: 1},
       duration: 1,
     });
     tl.addPause();
+    tl.addLabel("key8");
     tl.to(ps.t2.node, {
-      opacity: 1,
+      attr: {opacity: 1},
       duration: 1,
     });
     tl.addPause();
+    tl.addLabel("key9");
     tl.to(ps.t3.node, {
-      opacity: 1,
+      attr: {opacity: 1},
       duration: 1,
     });
-    tl.add(() => {
-      //
-    });
+    tl.addLabel("key10");
   }
 }
 
@@ -569,26 +680,28 @@ let buildAlignedArrangmentTimeline = function() {
   tl.eventCallback('onComplete', () => tlCoord.completed(tl));
 
   let ps = tlCoord.data.ps;
-  // proofSquare.arrangement = 'ALIGNED_SQUARES';
 
-  tl.addPause("+=0.005");
-
+  tl.addPause("+=1");
+  tl.addLabel("key1");
   tl.to(ps.t1.node, {
     transformOrigin: "100% 0%",
     rotate: "-=90",
     duration: 1,
   });
   tl.addPause();
+  tl.addLabel("key2");
   tl.to(ps.t4.node, {
     transformOrigin: "0% 100%",
     rotate: "+=90",
     duration: 1,
   });
   tl.addPause();
+  tl.addLabel("key3");
   tl.to([ps.t3.node, ps.t4.node], {
     translateX: `-=${triangle.lengthB}`,
     duration: 1,
   });
+  tl.addLabel("key4");
 
   tl.addPause("+=0.005", () => console.log('alignedArrangement paused'));
   tl.addPause("+=0.005");
@@ -596,65 +709,20 @@ let buildAlignedArrangmentTimeline = function() {
 
 
 
+// let next = draw.rect(50, 50).fill("blue");
+// next.on("click", () => {
+//   tlCoord.next();
+// })
 
-
-
-
-
+// let prev = draw.rect(50, 50).fill("red").translate(100, 0);
+// prev.on("click", () => {
+//   tlCoord.prev();
+// })
 
 let tlCoord = new TimelineCoordinator();
 draw.on("dblclick", () => {
-  console.log('coord sending resume');
-  tlCoord.resume();
+  tlCoord.play();
 });
-
-// let button = draw.rect(100, 100).fill('blue');
-// button.on("click", () => {
-//   console.log('coord sending reverse');
-//   tlCoord.reverse();
-// });
-
-
 
 
 tlCoord.start();
-
-
-
-
-
-
-
-
-
-
-// let squareConstruction = new SVG.TimelineBuilder({ pause: true, unpauseEvent: 'advance' });
-
-
-
-
-// draw.publish('advance')
-// draw.on("dblclick", () => {
-//   draw.broadcast('advance');
-// })
-
-
-// let tb = new SVG.TimelineBuilder({ pause: true, unpauseEvent: 'advance' });
-// tb.appendPause();
-// tb.appendFunction(() => {
-//   triangle.toggleResizeHandles();
-//   triangle.front()
-// });
-// tb.append(triangle.animation(1000).translate(-150, 0));
-
-
-
-// tb.appendFunction(() => { proofSquare.squareConstructionTB(squareConstruction) });
-// tb.appendTimelineBuilder(squareConstruction);
-// tb.play();
-
-
-// square.toggleArrangement({animate: true});
-
-
-
