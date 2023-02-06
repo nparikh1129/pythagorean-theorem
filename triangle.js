@@ -630,21 +630,25 @@ class TimelineCoordinator {
 
   // TODO: If near the end of the tween, jump to next label, and then play to continue
   play() {
-    if (this.tl?.paused() || this.tl.reversed()) {
+    if (this.tl.paused() || this.tl.reversed()) {
       this.tl.play();
       console.log(this.tl.vars.id, 'playing');
     }
     else {
-      console.log('play ignored');
+      this.jumpNext();
     }
   };
 
   playReverse() {
-    this.tl.reverse();
+    if (this.tl.paused() || !this.tl.reversed()) {
+      this.tl.reverse();
+    }
+    else {
+      this.jumpPrev();
+    }
   };
 
   jumpNext() {
-    console.log(this.tl.currentLabel(), this.tl.nextLabel(), this.tl.paused())
     let label = this.tl.nextLabel();
     if (label) {
       this.tl.seek(label, false);
@@ -685,12 +689,12 @@ class TimelineCoordinator {
 
 let canvasCX = draw.width() / 2; 
 let canvasCY = draw.height() / 2;
-let triangle = draw.rightTriangle(150, 150, 300).transform({
-  origin: [0, 0],
-  rotate: -90,
-  translateX: canvasCX - 150,
-  translateY: canvasCY + 50,
-}).setLabelsVisible(false);
+
+
+let triangle = draw.rightTriangle(150, 150, 300)
+  .setLabelsVisible(false)
+  .alignPosition('center', draw, 'center')
+  .setRotation('center', -90);
 
 let proofSquare = draw.proofSquare(triangle)
   .back()
@@ -1103,49 +1107,3 @@ jumpNext.on("click", () => {
 
 let tlc = new TimelineCoordinator();
 tlc.start();
-
-
-
-
-
-
-// triangle.setResizeHandlesVisible(false);
-
-// let tl = gsap.timeline({ id: 'testTL', paused: true });
-// tlc.timeline(tl);
-
-// tlc.addKeyframeStart();
-
-// let box = triangle.rbox();
-// console.log(box);
-
-// tl.to(triangle.node, {
-//   y: "+=150",
-//   duration: 1,
-// });
-
-// tlc.addKeyframe();
-
-// box = triangle.rbox();
-// console.log(box);
-
-// tl.to(triangle.node, {
-//   x: "+=" + box.w,
-//   y: "+=" + box.h,
-//   duration: 2,
-// })
-
-// tlc.addKeyframeEnd();
-
-// box = triangle.rbox();
-// console.log(box);
-
-
-// tl.eventCallback('onStart', () => console.log("tl started"));
-// tl.eventCallback('onComplete', () => console.log("tl ended"));
-
-
-
-
-
-

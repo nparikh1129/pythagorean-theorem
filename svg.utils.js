@@ -22,7 +22,62 @@ SVG.extend(SVG.Element, {
 
   animation: function(duration, delay, when) {
     return this.animate(duration, delay, when).active(false);
-  }
+  },
+
+  getPosition: function(origin) {
+    let [ox, oy] = origin.split(" ");
+    if (!oy) {
+      oy = "center";
+    }
+    let x, y;
+    let box = this.rbox(this.root());
+
+    if (ox == "left") {
+      x = box.x;
+    } else if (ox == "center") {
+      x = box.cx;
+    } else if (ox == "right") {
+      x = box.x2
+    } else {
+      x  = box.cx;
+    }
+
+    if (oy == "top") {
+      y = box.y; 
+    } else if (oy == "center") {
+      y = box.cy;
+    } else if (oy == "bottom") {
+      y = box.y2;
+    } else {
+      y = box.cy;
+    }
+
+    return new SVG.Point(x, y);
+  },
+
+  setPosition: function(origin, x, y) {
+    src = this.getPosition(origin);
+    let dx = x - src.x;
+    let dy = y - src.y;
+    this.translate(dx, dy);
+    return this;
+  },
+
+  alignPosition: function(origin, elem, elemOrigin) {
+    src = this.getPosition(origin);
+    dst = elem.getPosition(elemOrigin);
+    let dx = dst.x - src.x;
+    let dy = dst.y - src.y;
+    this.translate(dx, dy);
+    return this;
+  },
+
+  setRotation: function(origin, angle) {
+    let pivot = this.getPosition(origin);
+    let da = angle - this.transform().rotate;
+    this.rotate(da, this.point(pivot.x, pivot.y));
+    return this;
+  },
 });
 
 
@@ -129,28 +184,4 @@ SVG.TimelineBuilder = class extends SVG.EventTarget {
       tb.play();
     }, { delay: delay, pause: pause});
   }
-
-  
-  // appendFromTimelineBuilder(tb, {delay = 0, pause = false} = {}) {
-  //   this._time += delay;
-
-  //   let events = [];
-  //   for (let r of tb._timeline._runners) {
-  //     events.push({
-  //       start: r.start,
-  //       runner: r.runner,
-  //     });
-  //   }
-  //   for (let e of events) {
-  //     let runner = e.runner;
-  //     let time = this._time + e.start;
-  //     this._timeline.schedule(runner, time, 'absolute');
-  //   }
-  //   this._time += tb._time;
-
-  //   if (pause) {
-  //     this.appendPause();
-  //   }
-  // }
-
 }
