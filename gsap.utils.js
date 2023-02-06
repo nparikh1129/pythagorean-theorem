@@ -17,7 +17,9 @@ gsap.registerEffect({
 gsap.registerEffect({
   name: "fadeOut",
   effect: (targets, config) => {
-      return gsap.to(targets, {
+      return gsap.fromTo(targets, {
+        attr: { opacity: 1 },
+      }, {
         attr: { opacity: 0 },
         display: "none",
         duration: config.duration,

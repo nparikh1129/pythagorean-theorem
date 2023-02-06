@@ -1,6 +1,5 @@
 "use strict";
 
-
 const RED = '#ff3b30';
 const GREEN = '#34c759'
 const BLUE = '#007bff';
@@ -29,9 +28,14 @@ const LABEL_EXPONENT_FONT = Object.assign({}, LABEL_FONT, {
 
 let draw = SVG()
   .addTo('body')
-  .size(window.screen.availWidth, window.screen.availHeight)
+  .size(document.body.clientWidth, window.visualViewport.height)
   .css({ 'background-color': '#1c1c1e' });
 // TODO: Handle onResize event
+
+window.addEventListener("resize", () => {
+  draw.size(document.body.clientWidth, window.visualViewport.height)
+})
+
 
 
 SVG.RightTriangle = class extends SVG.G {
@@ -101,15 +105,20 @@ SVG.RightTriangle = class extends SVG.G {
     this.add(this._rightAngleSymbol);
     this.add(this._lineA);
     this.add(this._lineB);
-    
   }
 
   get lengthA() {
     return this._lineA.length;
   }
+  set lengthA(length) {
+    this.resize(length, this.lengthB);
+  }
 
   get lengthB() {
     return this._lineB.length;
+  }
+  set lengthB(length) {
+    this.resize(this.lengthA, length);
   }
 
   get v0() {
@@ -263,7 +272,6 @@ SVG.ResizableLine = class extends SVG.G {
     this._resizeHandle.on('dragmove.namespace', e => {
       const { handler, box } = e.detail
       e.preventDefault()
-
       this.length = box.cx;
       this.fire('resize')
     })
@@ -557,15 +565,21 @@ SVG.Equation = class{
   translate(...args) {
     this.g.translate(...args);
     return this;
-  }
-
+  };
   fill(...args) {
     this.list.fill(...args);
     return this;
-  }
-
+  };
   scale(...args) {
     this.g.scale(...args);
+    return this;
+  };
+  hide(...args) {
+    this.g.hide(...args);
+    return this;
+  };
+  hideChildren() {
+    this.list.forEach((c) => { c.hide() });
     return this;
   }
 }
@@ -586,18 +600,21 @@ class TimelineCoordinator {
       "alignedArrangment": buildAlignedArrangmentTimeline,
     };
     this.keyframeIndex = 0;
-  }
+  };
+
+  timeline(tl) {
+    if (tl) {
+      this.tl = tl;
+    }
+    else {
+      return this.tl;
+    }
+  };
 
   start() {
     console.log('TimelineCoordinator started');
     this.completed(this.tl);
-  }
-
-  started(tl) {
-    this.tl = tl;
-    tl.timeScale(1);
-    console.log(this.tl.vars.id, 'started')
-  }
+  };
 
   completed(tl) {
     console.log(this.tl.vars.id, 'completed');
@@ -609,21 +626,22 @@ class TimelineCoordinator {
     }
     console.log(nextId);
     this._transitions[nextId]();
-  }
+  };
 
+  // TODO: If near the end of the tween, jump to next label, and then play to continue
   play() {
-    if (this.tl?.paused()) {
+    if (this.tl?.paused() || this.tl.reversed()) {
       this.tl.play();
       console.log(this.tl.vars.id, 'playing');
     }
     else {
       console.log('play ignored');
     }
-  }
+  };
 
   playReverse() {
     this.tl.reverse();
-  }
+  };
 
   jumpNext() {
     console.log(this.tl.currentLabel(), this.tl.nextLabel(), this.tl.paused())
@@ -631,31 +649,42 @@ class TimelineCoordinator {
     if (label) {
       this.tl.seek(label, false);
     }
-  }
+  };
 
   jumpPrev() {
     let label = this.tl.previousLabel();
     if (label) {
       this.tl.seek(label, false);
     }
-  }
+  };
 
   addKeyframe({pause = true} = {}) {
     this.tl.addLabel(
-      "keyframe-" + this.keyframeIndex++,
+      "kf-" + this.keyframeIndex++,
       "+=0.0001"
     );
     if (pause) {
-      this.tl.addPause()
-    };
+      this.tl.addPause();
+    }
     this.tl.add(() => {}, "+=0.0001");
-  } 
+    this.tl.seek("+=0", false);
+  };
+
+  addKeyframeStart() {
+    this.addKeyframe({ pause: false });
+  };
+
+  addKeyframeEnd(seek = true) {
+    this.addKeyframe({ pause: false });
+    this.tl.seek(0, false);
+    this.tl.invalidate();
+  };
 }
 
 
 
-let canvasCX = window.visualViewport.width / 2; 
-let canvasCY = window.visualViewport.height / 2;
+let canvasCX = draw.width() / 2; 
+let canvasCY = draw.height() / 2;
 let triangle = draw.rightTriangle(150, 150, 300).transform({
   origin: [0, 0],
   rotate: -90,
@@ -674,6 +703,27 @@ let proofSquare2 = draw.proofSquare(triangle)
   .hide();
 
 let equation = new SVG.Equation().translate(canvasCX, 600).scale(3);
+equation.g.ungroup();
+let a2 = equation.a2;
+let b2 = equation.b2;
+let c2 = equation.c2;
+let plus = equation.plus;
+let equals = equation.equals;
+a2.remember('matrix', a2.matrix()).hide();
+b2.remember('matrix', b2.matrix()).hide();
+c2.remember('matrix', c2.matrix()).hide();
+plus.remember('matrix', plus.matrix()).hide();
+equals.remember('matrix', equals.matrix()).hide();
+
+function rmatrix(e) {
+    let box = e.rbox(draw);
+    let m = e.matrix();
+    m.e = box.cx;
+    m.f = box.cy;
+    return m;
+}
+
+
 
 
 
@@ -681,13 +731,9 @@ let equation = new SVG.Equation().translate(canvasCX, 600).scale(3);
 let buildTriangleSizingTimeline = function() {
 
   let tl = gsap.timeline({ id: 'triangleSizing', paused: true });
-  tl.eventCallback('onComplete', () => tlc.completed(tl));
+  tlc.timeline(tl);
 
-  // tl.eventCallback('onStart', () => tlCoord.started(tl));
-
-  tlc.started(tl);
-  // tl.addPause("+=1");
-  tlc.addKeyframe({ pause: false });
+  tlc.addKeyframeStart();
 
   tl.fadeOut(triangle.getLabels(), { duration: 0 });
   tl.fadeIn(triangle.labelA.node)
@@ -704,15 +750,23 @@ let buildTriangleSizingTimeline = function() {
 
   tl.fadeOut(triangle.getNonPlainElements());
 
-  tlc.addKeyframe({ pause: false });
+  tlc.addKeyframe();
 
-  //TODO: End by animating triangle into a standard size
+  tl.to(triangle, {
+    lengthA: 175,
+    lengthB: 125,
+    duration: 1,
+  });
+
+  tlc.addKeyframeEnd();
+
+  tl.eventCallback('onComplete', () => tlc.completed(tl));
 }
 
 
 let buildSquareConstructionTimeline = function() {
   let tl = gsap.timeline({ id: 'squareConstruction' });
-  tl.eventCallback('onStart', () => tlc.started(tl));
+  tl.eventCallback('onStart', () => tlc.timeline(tl));
   tl.eventCallback('onComplete', () => squareConstruction());
 
   let ps = proofSquare;
@@ -841,16 +895,13 @@ let buildSquareConstructionTimeline = function() {
 let buildAlignedArrangmentTimeline = function() {
 
   let tl = gsap.timeline({ id: 'alignedArrangement' });
-  tl.eventCallback('onStart', () => tlc.started(tl));
+  tl.eventCallback('onStart', () => tlc.timeline(tl));
   tl.eventCallback('onComplete', () => tlc.completed(tl));
 
   let canvasCX = window.visualViewport.width / 2; 
   let ps = proofSquare;
   let ps2 = proofSquare2;
   let box = ps.square.tbox();
-  let labelA2Clone = ps.labelA2.clone().addTo(draw)
-  let labelB2Clone = ps.labelB2.clone().addTo(draw)
-  let labelC2Clone = ps2.labelC2.clone().addTo(draw)
 
   tl.addPause("+=1");
   tl.addLabel("key1");
@@ -881,24 +932,12 @@ let buildAlignedArrangmentTimeline = function() {
   tl.addPause();
   tl.addLabel("key4");
 
-  tl.fromTo(ps.labelA2.node, {
-    display: "",
-    attr: { opacity: 0 },
-  }, {
-    attr: { opacity: 1 },
-    duration: 1,
-  });
+  tl.fadeIn(ps.labelA2.node)
 
   tl.addPause();
   tl.addLabel("key5");
 
-  tl.fromTo(ps.labelB2.node, {
-    display: "",
-    attr: { opacity: 0 },
-  }, {
-    attr: { opacity: 1 },
-    duration: 1,
-  });
+  tl.fadeIn(ps.labelB2.node);
 
   tl.addPause();
   tl.addLabel("key6");
@@ -963,6 +1002,18 @@ let buildAlignedArrangmentTimeline = function() {
   tl.addPause();
   tl.addLabel("key9");
   tl.add(() => {}, "+=0.001");
+
+  tl.add(() => {
+    a2.transform(rmatrix(ps.labelA2));
+    console.log('setting up area text');
+  });
+  tl.set(a2.node, {
+    display: "",
+  })
+  tl.to(a2.node, {
+    attr: {transform: a2.remember('matrix')},
+    duration: 1.5,
+  });
 
   // tl.add(() => {
   //   labelA2Clone.show();
@@ -1052,3 +1103,49 @@ jumpNext.on("click", () => {
 
 let tlc = new TimelineCoordinator();
 tlc.start();
+
+
+
+
+
+
+// triangle.setResizeHandlesVisible(false);
+
+// let tl = gsap.timeline({ id: 'testTL', paused: true });
+// tlc.timeline(tl);
+
+// tlc.addKeyframeStart();
+
+// let box = triangle.rbox();
+// console.log(box);
+
+// tl.to(triangle.node, {
+//   y: "+=150",
+//   duration: 1,
+// });
+
+// tlc.addKeyframe();
+
+// box = triangle.rbox();
+// console.log(box);
+
+// tl.to(triangle.node, {
+//   x: "+=" + box.w,
+//   y: "+=" + box.h,
+//   duration: 2,
+// })
+
+// tlc.addKeyframeEnd();
+
+// box = triangle.rbox();
+// console.log(box);
+
+
+// tl.eventCallback('onStart', () => console.log("tl started"));
+// tl.eventCallback('onComplete', () => console.log("tl ended"));
+
+
+
+
+
+
