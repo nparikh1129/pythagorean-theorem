@@ -501,14 +501,3 @@ gsap.to(ps.t1.node, {
   rotate: "-=90",
   duration: 1,
 });
-
-
-
-
-
-
-
-
-
-
-

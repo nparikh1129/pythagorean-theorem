@@ -1,3 +1,24 @@
+SVG._getPosition = function(origin, box) {
+  origin = origin.toLowerCase();
+  let x, y;
+  if (origin.includes("left")) {
+    x = box.x;
+  } else if (origin.includes("right")) {
+    x = box.x2;
+  } else {
+    x = box.cx;
+  }
+  if (origin.includes("top")) {
+    y = box.y; 
+  } else if (origin.includes("bottom")) {
+    y = box.y2;
+  } else {
+    y = box.cy;
+  }
+  return new SVG.Point(x, y);
+},
+
+
 SVG.extend(SVG.Box, {
   // https://stackoverflow.com/questions/20925818/algorithm-to-check-if-two-boxes-overlap
   // TODO: Make static?
@@ -11,7 +32,11 @@ SVG.extend(SVG.Box, {
     [y2min, y2max] = box.y <= box.y2 ? [box.y, box.y2] : [box.y2, box.y];
 
     return (x1min < x2max && x2min < x1max) && (y1min < y2max && y2min < y1max);
-  }
+  },
+
+  getPosition: function(origin) {
+    return SVG._getPosition(origin, this);
+  },
 });
 
 
@@ -25,34 +50,7 @@ SVG.extend(SVG.Element, {
   },
 
   getPosition: function(origin) {
-    let [ox, oy] = origin.split(" ");
-    if (!oy) {
-      oy = "center";
-    }
-    let x, y;
-    let box = this.rbox(this.root());
-
-    if (ox == "left") {
-      x = box.x;
-    } else if (ox == "center") {
-      x = box.cx;
-    } else if (ox == "right") {
-      x = box.x2
-    } else {
-      x  = box.cx;
-    }
-
-    if (oy == "top") {
-      y = box.y; 
-    } else if (oy == "center") {
-      y = box.cy;
-    } else if (oy == "bottom") {
-      y = box.y2;
-    } else {
-      y = box.cy;
-    }
-
-    return new SVG.Point(x, y);
+    return SVG._getPosition(origin, this.rbox(this.root()));
   },
 
   setPosition: function(origin, x, y) {
@@ -72,11 +70,79 @@ SVG.extend(SVG.Element, {
     return this;
   },
 
+  alignPositionX: function(origin, elem, elemOrigin, offset = 0) {
+    src = this.getPosition(origin);
+    dst = elem.getPosition(elemOrigin);
+    let dx = (dst.x - src.x) + offset;
+    this.translate(dx, 0);
+    return this;
+  },
+
+  alignPositionY: function(origin, elem, elemOrigin, offset = 0) {
+    src = this.getPosition(origin);
+    dst = elem.getPosition(elemOrigin);
+    let dy = (dst.y - src.y) + offset;
+    this.translate(0, dy);
+    return this;
+  },
+
   setRotation: function(origin, angle) {
     let pivot = this.getPosition(origin);
     let da = angle - this.transform().rotate;
     this.rotate(da, this.point(pivot.x, pivot.y));
     return this;
+  },
+
+  getAbsoluteMatrix: function() {
+    let m = this.matrix();
+    for(let p of this.parents()) {
+      m = m.transform(p.matrix());
+      if (p === this.root())
+        break;
+    }
+    return m;
+  },
+
+  getAbsoluteTransform: function() {
+    let m = this.getAbsoluteMatrix();
+    let t = m.decompose();
+    let keys = ["a", "b", "c", "d", "e", "f"];
+    keys.forEach(k => delete t[k]);
+    return t;
+  },
+
+  saveState: function() {
+    let attrs = this.attr();
+    if (!attrs.transform) {
+      attrs.transform = "matrix(1,0,0,1,0,0)";
+    }
+    if (!attrs.opacity) {
+      attrs.opacity = 1;
+    }
+    this.remember("oldAttrs", attrs);
+    return this;
+  },
+
+  diffState: function(mergeVars = {}) {
+    let attr = this.attr();
+    this.attr(this.remember("oldAttrs"));
+
+    let m = attr.transform;
+    m = m.substring(7, m.length-1);
+    let matrix = new SVG.Matrix(m);
+    delete attr.transform;
+    let t = matrix.decompose();
+
+    let vars = {
+      attr: attr,
+      x: t.translateX,
+      y: t.translateY,
+      rotate: t.rotate,
+      scaleX: t.scaleX,
+      scaleY: t.scaleY,
+    }
+    Object.assign(vars, mergeVars);
+    return vars;
   },
 });
 
