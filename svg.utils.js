@@ -18,7 +18,9 @@ SVG._getPosition = function(origin, box) {
   return new SVG.Point(x, y);
 },
 
-
+SVG.Box.merge = function(boxes) {
+  return boxes.reduce((merged, box) => merged.merge(box));
+};
 SVG.extend(SVG.Box, {
   // https://stackoverflow.com/questions/20925818/algorithm-to-check-if-two-boxes-overlap
   // TODO: Make static?

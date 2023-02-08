@@ -25,7 +25,6 @@ const LABEL_EXPONENT_FONT = Object.assign({}, LABEL_FONT, {
 });
 
 
-
 let draw = SVG()
   .addTo('body')
   .size(document.body.clientWidth, window.visualViewport.height)
@@ -35,6 +34,24 @@ let draw = SVG()
 window.addEventListener("resize", () => {
   draw.size(document.body.clientWidth, window.visualViewport.height)
 })
+
+const A2 = draw.text(function(add) {
+  add.tspan('a').font(LABEL_FONT)
+  add.tspan('2').font(LABEL_EXPONENT_FONT)
+}).fill(WHITE).center(0, 0);
+draw.defs().add(A2);
+
+const B2 = draw.text(function(add) {
+  add.tspan('b').font(LABEL_FONT)
+  add.tspan('2').font(LABEL_EXPONENT_FONT)
+}).fill(WHITE).center(0, 0);
+draw.defs().add(B2);
+
+const C2 = draw.text(function(add) {
+  add.tspan('c').font(LABEL_FONT)
+  add.tspan('2').font(LABEL_EXPONENT_FONT)
+}).fill(WHITE).center(0, 0);
+draw.defs().add(C2);
 
 
 
@@ -338,27 +355,15 @@ SVG.ProofSquare = class extends SVG.G {
     this._size;
     this.initSquare();
     this.add(this.square);
-    this.square.back()
+    this.square.back();
 
-    this.labelA2 = draw.text(function(add) {
-      add.tspan('a').font(LABEL_FONT)
-      add.tspan('2').font(LABEL_EXPONENT_FONT)
-    }).fill(WHITE);
-    this.add(this.labelA2);
-
-    this.labelB2 = draw.text(function(add) {
-      add.tspan('b').font(LABEL_FONT)
-      add.tspan('2').font(LABEL_EXPONENT_FONT)
-    }).fill(WHITE);
-    this.add(this.labelB2);
-
-    this.labelC2 = draw.text(function(add) {
-      add.tspan('c').font(LABEL_FONT)
-      add.tspan('2').font(LABEL_EXPONENT_FONT)
-    }).fill(WHITE);
-    this.add(this.labelC2);
-
-    this.labelsList = new SVG.List([this.labelA2, this.labelB2, this.labelC2]);
+    this.a2 = draw.use(A2);
+    this.b2 = draw.use(B2);
+    this.c2 = draw.use(C2);
+    this.add(this.a2);
+    this.add(this.b2);
+    this.add(this.c2);
+    this.labelsList = new SVG.List([this.a2, this.b2, this.c2]);
 
     triangle.on('resize', () => { this.arrange() });
     this.setLabelsVisible(this._labelsVisible);
@@ -394,15 +399,15 @@ SVG.ProofSquare = class extends SVG.G {
     }).cx(0).cy(0);
     let box = this.square.bbox();
 
-    this.labelA2.transform({
+    this.a2.transform({
       translate: [box.x + (this.lengthA / 2), box.y + (this.lengthA / 2)],
       scale: this.lengthA / 80,
     });
-    this.labelB2.transform({
+    this.b2.transform({
       translate: [box.x2 - (this.lengthB / 2), box.y2 - (this.lengthB / 2)],
       scale: this.lengthB / 80,
     });
-    this.labelC2.transform({
+    this.c2.transform({
       scale: this._size / 100,
     });
 
@@ -462,20 +467,20 @@ SVG.ProofSquare = class extends SVG.G {
     this._labelsVisible = visible;
     if (visible) {
       if (this.arrangement == 'TWISTED_SQUARES') {
-        this.labelC2.show();
-        this.labelA2.hide();
-        this.labelB2.hide();
+        this.c2.show();
+        this.a2.hide();
+        this.b2.hide();
       }
       else {
-        this.labelA2.show();
-        this.labelB2.show();
-        this.labelC2.hide();
+        this.a2.show();
+        this.b2.show();
+        this.c2.hide();
       }
     }
     else {
-      this.labelA2.hide();
-      this.labelB2.hide();
-      this.labelC2.hide();
+      this.a2.hide();
+      this.b2.hide();
+      this.c2.hide();
     }
     return this;
   };
@@ -515,29 +520,18 @@ SVG.extend(SVG.Container, {
 
 
 
-SVG.Equation = class{
+SVG.Equation = class extends SVG.G {
 
   constructor() {
+    super();
 
-    this.a2 = draw.text(function(add) {
-      add.tspan('a').font(LABEL_FONT)
-      add.tspan('2').font(LABEL_EXPONENT_FONT)
-    }).fill(WHITE);
-
-    this.b2 = draw.text(function(add) {
-      add.tspan('b').font(LABEL_FONT)
-      add.tspan('2').font(LABEL_EXPONENT_FONT)
-    }).fill(WHITE);
-
-    this.c2 = draw.text(function(add) {
-      add.tspan('c').font(LABEL_FONT)
-      add.tspan('2').font(LABEL_EXPONENT_FONT)
-    }).fill(WHITE);
-
+    this.a2 = draw.use(A2);
+    this.b2 = draw.use(B2);
+    this.c2 = draw.use(C2);
     this.plus = draw.plain('+').font(LABEL_FONT).fill(WHITE);
     this.equals = draw.plain('=').font(LABEL_FONT).fill(WHITE);
 
-    this.g = draw.group()
+    this
       .add(this.a2)
       .add(this.b2)
       .add(this.c2)
@@ -557,25 +551,12 @@ SVG.Equation = class{
     this.b2.translate(100, 0)
     this.equals.translate(150, 0)
     this.c2.translate(200, 0)
-
-    let box = this.g.bbox();
+    let box = SVG.Box.merge(this.list.bbox())
     this.list.each((c) => { c.translate(-box.cx, -box.cy) });
   };
 
-  translate(...args) {
-    this.g.translate(...args);
-    return this;
-  };
   fill(...args) {
     this.list.fill(...args);
-    return this;
-  };
-  scale(...args) {
-    this.g.scale(...args);
-    return this;
-  };
-  hide(...args) {
-    this.g.hide(...args);
     return this;
   };
   hideChildren() {
@@ -583,6 +564,11 @@ SVG.Equation = class{
     return this;
   }
 }
+SVG.extend(SVG.Container, {
+  equation: function() {
+    return this.put(new SVG.Equation());
+  }
+});
 
 
 class TimelineCoordinator {
@@ -668,11 +654,6 @@ class TimelineCoordinator {
 }
 
 
-
-let canvasCX = draw.width() / 2; 
-let canvasCY = draw.height() / 2;
-
-
 let triangle = draw.rightTriangle(150, 150, 300)
   .setLabelsVisible(false)
   .alignPosition('center', draw, 'center')
@@ -688,26 +669,10 @@ let proofSquare2 = draw.proofSquare(triangle)
   .front()
   .hide();
 
-let equation = new SVG.Equation().translate(canvasCX, 600).scale(3);
-equation.g.ungroup();
-let a2 = equation.a2;
-let b2 = equation.b2;
-let c2 = equation.c2;
-let plus = equation.plus;
-let equals = equation.equals;
-a2.remember('matrix', a2.matrix()).hide();
-b2.remember('matrix', b2.matrix()).hide();
-c2.remember('matrix', c2.matrix()).hide();
-plus.remember('matrix', plus.matrix()).hide();
-equals.remember('matrix', equals.matrix()).hide();
-
-function rmatrix(e) {
-    let box = e.rbox(draw);
-    let m = e.matrix();
-    m.e = box.cx;
-    m.f = box.cy;
-    return m;
-}
+let equation = draw.equation()
+  .scale(3)
+  .alignPositionX('center', draw, 'center')
+  .translate(0, 600);
 
 
 
@@ -843,11 +808,11 @@ let buildTimeline = function() {
 
   tlc.addKeyframe();
 
-  tl.fadeIn(ps.labelC2.node);
+  tl.fadeIn(ps.c2.node);
 
   tlc.addKeyframe();
 
-  tl.fadeOut(ps.labelC2.node);
+  tl.fadeOut(ps.c2.node);
 
   /*** Aligned Square Timeline ***/
 
@@ -876,11 +841,11 @@ let buildTimeline = function() {
 
   tlc.addKeyframe();
 
-  tl.fadeIn(ps.labelA2.node)
+  tl.fadeIn(ps.a2.node)
 
   tlc.addKeyframe();
 
-  tl.fadeIn(ps.labelB2.node)
+  tl.fadeIn(ps.b2.node)
 
   tlc.addKeyframe();
 
@@ -910,7 +875,7 @@ let buildTimeline = function() {
 
   tlc.addKeyframe();
 
-  tl.fadeOut([ps2.labelA2.node, ps2.labelB2.node]);
+  tl.fadeOut([ps2.a2.node, ps2.b2.node]);
 
   tl.to([ps2.t3.node, ps2.t4.node], {
     x: `+=${ps.lengthB}`,
@@ -927,7 +892,7 @@ let buildTimeline = function() {
     duration: 1.2,
   });
 
-  tl.fadeIn(ps2.labelC2.node);
+  tl.fadeIn(ps2.c2.node);
 
   /*** Equation Timeline ***/
 
@@ -952,7 +917,7 @@ let buildTimeline = function() {
 //   tl.add(() => {}, "+=0.001");
 
 //   tl.add(() => {
-//     a2.transform(rmatrix(ps.labelA2));
+//     a2.transform(rmatrix(ps.a2));
 //     console.log('setting up area text');
 //   });
 //   tl.set(a2.node, {
@@ -965,8 +930,8 @@ let buildTimeline = function() {
 
   // tl.add(() => {
   //   labelA2Clone.show();
-  //   let box = ps.labelA2.rbox(draw);
-  //   let m = ps.labelA2.matrix();
+  //   let box = ps.a2.rbox(draw);
+  //   let m = ps.a2.matrix();
   //   m.e = box.cx;
   //   m.f = box.cy;
   //   labelA2Clone.transform(m);
@@ -983,8 +948,8 @@ let buildTimeline = function() {
 
   // tl.add(() => {
   //   labelB2Clone.show();
-  //   let box = ps.labelB2.rbox(draw);
-  //   let m = ps.labelB2.matrix();
+  //   let box = ps.b2.rbox(draw);
+  //   let m = ps.b2.matrix();
   //   m.e = box.cx;
   //   m.f = box.cy;
   //   labelB2Clone.transform(m);
@@ -1002,8 +967,8 @@ let buildTimeline = function() {
 
   // tl.add(() => {
   //   labelC2Clone.show();
-  //   let box = ps2.labelC2.rbox(draw);
-  //   let m = ps2.labelC2.matrix();
+  //   let box = ps2.c2.rbox(draw);
+  //   let m = ps2.c2.matrix();
   //   m.e = box.cx;
   //   m.f = box.cy;
   //   labelC2Clone.transform(m);
