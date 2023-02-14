@@ -43,12 +43,20 @@ SVG.extend(SVG.Box, {
 
 
 SVG.extend(SVG.Element, {
-  tbox: function() {
-    return this.bbox().transform(this.matrix());
+
+  setFill: function(color) {
+    gsap.set(this.node, {
+      attr: { fill: color },
+    });
+    return this;
   },
 
-  animation: function(duration, delay, when) {
-    return this.animate(duration, delay, when).active(false);
+  translateBy: function(dx, dy) {
+    gsap.set(this.node, {
+      x: "+=" + dx,
+      y: "+=" + dy,
+    });
+    return this;
   },
 
   getPosition: function(origin) {
@@ -69,6 +77,12 @@ SVG.extend(SVG.Element, {
     let dx = dst.x - src.x;
     let dy = dst.y - src.y;
     this.translate(dx, dy);
+
+    // gsap.set(this.node, {
+    //   x: "+=" + dx,
+    //   y: "+=" + dy,
+    // })
+
     return this;
   },
 
@@ -91,7 +105,21 @@ SVG.extend(SVG.Element, {
   setRotation: function(origin, angle) {
     let pivot = this.getPosition(origin);
     let da = angle - this.transform().rotate;
+
     this.rotate(da, this.point(pivot.x, pivot.y));
+    // gsap.set(this.node, {
+    //   transformOrigin: origin,
+    //   rotate: "+=" + da,
+    // })
+
+    return this;
+  },
+
+  scaleToWidth: function(elem) {
+    let dst = elem.rbox(elem.root()).w;
+    let src = this.rbox(this.root()).w;
+    let ds = dst / src;
+    this.scale(ds);
     return this;
   },
 
@@ -108,9 +136,14 @@ SVG.extend(SVG.Element, {
   getAbsoluteTransform: function() {
     let m = this.getAbsoluteMatrix();
     let t = m.decompose();
-    let keys = ["a", "b", "c", "d", "e", "f"];
+    let keys = ["a", "b", "c", "d", "e", "f", "originX", "originY"];
     keys.forEach(k => delete t[k]);
     return t;
+  },
+
+  alignTransform: function(elem) {
+    this.transform(elem.getAbsoluteMatrix());
+    return this;
   },
 
   saveState: function() {
@@ -125,26 +158,45 @@ SVG.extend(SVG.Element, {
     return this;
   },
 
-  diffState: function(mergeVars = {}) {
+  diffState: function(mergeVars = {}, immediate = false) {
     let attr = this.attr();
     this.attr(this.remember("oldAttrs"));
+    let vars = { attr: attr }
+    let transformVars = {}
 
-    let m = attr.transform;
-    m = m.substring(7, m.length-1);
-    let matrix = new SVG.Matrix(m);
-    delete attr.transform;
-    let t = matrix.decompose();
-
-    let vars = {
-      attr: attr,
-      x: t.translateX,
-      y: t.translateY,
-      rotate: t.rotate,
-      scaleX: t.scaleX,
-      scaleY: t.scaleY,
+    if (!immediate) {
+      let m = attr.transform;
+      m = m.substring(7, m.length-1);
+      let matrix = new SVG.Matrix(m);
+      delete attr.transform;
+      let t = matrix.decompose();
+      transformVars = {
+        x: t.translateX,
+        y: t.translateY,
+        rotate: t.rotate,
+        // TODO: Something about the scaling is throwing the positioning off (origin?)
+        scaleX: t.scaleX,
+        scaleY: t.scaleY,
+      }
     }
-    Object.assign(vars, mergeVars);
+    Object.assign(vars, transformVars, mergeVars);
     return vars;
+  },
+
+  addToTimeline: function(timeline) {
+    this.remember("timeline", timeline);
+    this.saveState();
+    return this;
+  },
+
+  to: function(vars = {}) {
+    let timeline = this.remember("timeline");
+    timeline.to(this.node, this.diffState(vars));
+  },
+
+  set: function(vars = {}) {
+    let timeline = this.remember("timeline");
+    timeline.set(this.node, this.diffState(vars));
   },
 });
 

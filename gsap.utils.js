@@ -28,3 +28,23 @@ gsap.registerEffect({
   defaults: {duration: 1},
   extendTimeline: true,
 });
+
+gsap.registerEffect({
+  name: "show",
+  effect: (targets, config) => {
+    config.duration = 0;
+    return gsap.effects.fadeIn(targets, config);
+  },
+  defaults: { duration: 0 },
+  extendTimeline: true,
+});
+
+gsap.registerEffect({
+  name: "hide",
+  effect: (targets, config) => {
+    config.duration = 0;
+    return gsap.effects.fadeOut(targets, config);
+  },
+  defaults: { duration: 0 },
+  extendTimeline: true,
+});

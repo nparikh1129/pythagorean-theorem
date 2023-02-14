@@ -1,5 +1,7 @@
 "use strict";
 
+gsap.registerPlugin(Flip, CustomEase);
+
 const RED = '#ff3b30';
 const GREEN = '#34c759'
 const BLUE = '#007bff';
@@ -239,10 +241,17 @@ SVG.RightTriangle = class extends SVG.G {
     );
   }
 
-  setNonPlainElementsVisible(visible) {
-    this.getNonPlainElements().forEach((e) => {
-      e.style.display = "none"
-    });
+  setNonPlainElementsVisible(visible = true) {
+    if (visible) {
+      this.getNonPlainElements().forEach((e) => {
+        e.show();
+      });
+    }
+    else{
+      this.getNonPlainElements().forEach((e) => {
+        e.style.display = "none"
+      });
+    }
   }
 }
 SVG.extend(SVG.Container, {
@@ -377,7 +386,7 @@ SVG.ProofSquare = class extends SVG.G {
       stroke: GREEN,
       'stroke-width': 4,
       'stroke-linejoin': 'round',
-    }).cx(0).cy(0);
+    }).center(0, 0);
   }
 
   arrange() {
@@ -485,26 +494,6 @@ SVG.ProofSquare = class extends SVG.G {
     return this;
   };
 
-  gatherChildren() {
-    let tbox = this.square.tbox();
-    let [cx, cy] = [tbox.cx, tbox.cy];
-    this.square.transform({
-      translate: [0, 0],
-    });
-    this.arrange();
-    this.transform({
-      translate: [cx, cy],
-    });
-    this.labelsList.front();
-    // HACK: Unpoison gsap's cache
-    // TODO: Don't poison gsap's cache (by mixing transformations with svgjs?)
-    //        Could this be due to a clash with a parent class field/method
-    this.trianglesList.forEach((t) => {
-        gsap.set(t.node, { transform: t.matrix() });
-    });
-    gsap.set(this.square.node, { transform: this.square.matrix() });
-  }
-
   hideChildren() {
     this.children().forEach((c) => {
       c.hide();
@@ -519,7 +508,6 @@ SVG.extend(SVG.Container, {
 });
 
 
-
 SVG.Equation = class extends SVG.G {
 
   constructor() {
@@ -528,8 +516,8 @@ SVG.Equation = class extends SVG.G {
     this.a2 = draw.use(A2);
     this.b2 = draw.use(B2);
     this.c2 = draw.use(C2);
-    this.plus = draw.plain('+').font(LABEL_FONT).fill(WHITE);
-    this.equals = draw.plain('=').font(LABEL_FONT).fill(WHITE);
+    this.plus = draw.plain('+').font(LABEL_FONT).fill(WHITE).center(0, 0);
+    this.equals = draw.plain('=').font(LABEL_FONT).fill(WHITE).center(0, 0);
 
     this
       .add(this.a2)
@@ -559,10 +547,20 @@ SVG.Equation = class extends SVG.G {
     this.list.fill(...args);
     return this;
   };
-  hideChildren() {
-    this.list.forEach((c) => { c.hide() });
+
+  setChildrenVisible(visible = true) {
+    if (visible)
+      this.list.show();
+    else
+      this.list.hide();
     return this;
-  }
+  };
+
+  childNodes() {
+    let nodes = []
+    this.list.each((c) => nodes.push(c.node));
+    return nodes;
+  };
 }
 SVG.extend(SVG.Container, {
   equation: function() {
@@ -672,10 +670,12 @@ let proofSquare2 = draw.proofSquare(triangle)
 let equation = draw.equation()
   .scale(3)
   .alignPositionX('center', draw, 'center')
-  .translate(0, 600);
+  .translate(0, 600)
+  .setChildrenVisible(false);
 
-
-
+let a2 = draw.use(A2).hide();
+let b2 = draw.use(B2).hide();
+let c2 = draw.use(C2).hide();
 
 
 
@@ -697,7 +697,12 @@ let buildTimeline = function() {
 
   tlc.addKeyframeStart();
 
-  tl.fadeOut(triangle.getLabels(), { duration: 0 });
+  tl.add(() => {
+    ps.arrangement = "TWISTED_SQUARES";
+    ps2.arrangement = "ALIGNED_SQUARES";
+  });
+  tl.hide(triangle.getLabels());
+
   tl.fadeIn(triangle.labelA.node)
 
   tlc.addKeyframe();
@@ -718,41 +723,38 @@ let buildTimeline = function() {
     lengthA: 175,
     lengthB: 125,
     duration: 1,
+    // TODO: Clear the cache with a clearProps here?
   });
 
   /*** Square Construction Timeline ***/
 
   tlc.addKeyframe();
 
-  triangle.saveState()
-    .alignPosition("bottom left", box, "bottom left");
-  tl.to(triangle.node, triangle.diffState({
-    duration: 1,
-  }));
+  triangle.addToTimeline(tl)
+    .alignPosition("bottom left", box, "bottom left")
+    .to({ duration: 1 });
 
   tlc.addKeyframe();
 
-  tl.fadeIn(ps.t4.node, { duration: 0 });
-  triangle.saveState()
+  tl.show(ps.t4.node);
+  triangle.addToTimeline(tl)
     .rotate(90)
-    .alignPosition("top left", ps, "top left");
-  tl.to(triangle.node, triangle.diffState({
-    duration: 1.5,
-    ease: "power.inOut",
-  }));
+    .alignPosition("top left", ps, "top left")
+    .to({
+      duration: 2,
+      ease: "power2.inOut",
+    });
 
   tlc.addKeyframe();
 
-  tl.fadeIn(ps.t1.node, {
-    duration: 0
-  });
-  triangle.saveState()
+  tl.show(ps.t1.node);
+  triangle.addToTimeline(tl)
     .rotate(90)
-    .alignPosition("top right", ps, "top right");
-  tl.to(triangle.node, triangle.diffState({
-    duration: 1.5,
-    ease: "power.inOut",
-  }));
+    .alignPosition("top right", ps, "top right")
+    .to({
+      duration: 2,
+      ease: "power2.inOut",
+    });
 
   tlc.addKeyframe();
 
@@ -764,8 +766,8 @@ let buildTimeline = function() {
     .rotate(90)
     .alignPosition("bottom right", ps, "bottom right");
   tl.to(triangle.node, triangle.diffState({
-    duration: 1.5,
-    ease: "power.inOut",
+    duration: 2,
+    ease: "power2.inOut",
   }));
   tl.fadeIn(ps.t3.node, {
     duration: 0
@@ -838,6 +840,9 @@ let buildTimeline = function() {
     x: `-=${ps.lengthB}`,
     duration: 1,
   });
+  tl.add(() => {
+    ps.arrangement = "ALIGNED_SQUARES";
+  });
 
   tlc.addKeyframe();
 
@@ -893,11 +898,88 @@ let buildTimeline = function() {
   });
 
   tl.fadeIn(ps2.c2.node);
+  tl.add(() => {
+    ps2.arrangement = "TWISTED_SQUARES";
+  });
+
 
   /*** Equation Timeline ***/
 
   tlc.addKeyframe();
 
+  a2.saveState()
+    .show()
+    .alignTransform(ps.a2)
+  tl.set(a2.node, a2.diffState({}, true));
+
+  b2.saveState()
+    .show()
+    .alignTransform(ps.b2)
+  tl.set(b2.node, b2.diffState({}, true));
+
+  c2.saveState()
+    .show()
+    .alignTransform(ps2.c2)
+  tl.set(c2.node, c2.diffState({}, true));
+
+  tlc.applyChanges();
+
+  a2.saveState()
+    .alignTransform(equation.a2);
+  tl.to(a2.node, a2.diffState({
+    duration: 1.5,
+  }, true));
+
+  tlc.addKeyframe();
+
+  b2.saveState()
+    .alignTransform(equation.b2);
+  tl.to(b2.node, b2.diffState({
+    duration: 1.5,
+  }, true));
+
+  tlc.addKeyframe();
+
+  tl.fadeIn(equation.plus.node);
+
+  tlc.addKeyframe();
+
+  c2.saveState()
+    .alignTransform(equation.c2);
+  tl.to(c2.node, c2.diffState({
+    duration: 1.5,
+  }, true));
+
+  tlc.addKeyframe();
+
+  tl.fadeIn(equation.equals.node);
+
+  tlc.addKeyframe();
+
+  tl.fadeOut([a2.node, b2.node, c2.node], {
+    duration: 0,
+  });
+  tl.fadeIn(equation.childNodes(), {
+    duration: 0,
+  });
+  tlc.applyChanges();
+
+  equation.addToTimeline(tl)
+    .scaleToWidth(ps2)
+    .alignPositionX("center", ps2, "center")
+    .to({ duration: 1 });
+
+  tlc.addKeyframe();
+
+  tl.show(triangle.node);
+  triangle.addToTimeline(tl)
+    .transform({rotate: -90})
+    .alignPositionX("left", ps, "left")
+    .alignPositionY("center", equation, "center")
+    .set();
+  tl.hide(triangle.node);
+  tl.show(triangle.getNonPlainElements());
+  tl.fadeIn(triangle.node);
 
 
   tlc.addKeyframe();
@@ -905,91 +987,6 @@ let buildTimeline = function() {
 
   tl.eventCallback('onComplete', () => tlc.completed(tl));
 }
-
-
-
-
-
-
-
-//   tl.addPause();
-//   tl.addLabel("key9");
-//   tl.add(() => {}, "+=0.001");
-
-//   tl.add(() => {
-//     a2.transform(rmatrix(ps.a2));
-//     console.log('setting up area text');
-//   });
-//   tl.set(a2.node, {
-//     display: "",
-//   })
-//   tl.to(a2.node, {
-//     attr: {transform: a2.remember('matrix')},
-//     duration: 1.5,
-//   });
-
-  // tl.add(() => {
-  //   labelA2Clone.show();
-  //   let box = ps.a2.rbox(draw);
-  //   let m = ps.a2.matrix();
-  //   m.e = box.cx;
-  //   m.f = box.cy;
-  //   labelA2Clone.transform(m);
-  // });
-  // tl.to(labelA2Clone.node, {
-  //   y: 700,
-  //   scale: 3,
-  //   duration: 1.5,
-  // });
-  //
-  // tl.addPause();
-  // tl.addLabel("key10");
-  // tl.add(() => {}, "+=0.001");
-
-  // tl.add(() => {
-  //   labelB2Clone.show();
-  //   let box = ps.b2.rbox(draw);
-  //   let m = ps.b2.matrix();
-  //   m.e = box.cx;
-  //   m.f = box.cy;
-  //   labelB2Clone.transform(m);
-  // });
-  // tl.to(labelB2Clone.node, {
-  //   x: 600,
-  //   y: 700,
-  //   scale: 3,
-  //   duration: 1.5,
-  // });
-
-  // tl.addPause();
-  // tl.addLabel("key11");
-  // tl.add(() => {}, "+=0.001");
-
-  // tl.add(() => {
-  //   labelC2Clone.show();
-  //   let box = ps2.c2.rbox(draw);
-  //   let m = ps2.c2.matrix();
-  //   m.e = box.cx;
-  //   m.f = box.cy;
-  //   labelC2Clone.transform(m);
-  // });
-  // tl.to(labelC2Clone.node, {
-  //   x: 900,
-  //   y: 700,
-  //   scale: 3,
-  //   duration: 1.5,
-  // });
-
-  // tl.addPause();
-  // tl.addLabel("key12");
-  // tl.add(() => {}, "+=0.001");
-
-  // tl.to([labelA2Clone.node, labelB2Clone.node, labelC2Clone.node], {
-  //   fill: GOLD,
-  //   duration: 1,
-  // })
-// }
-
 
 
 let jumpPrev = draw.rect(50, 50).fill("red");
