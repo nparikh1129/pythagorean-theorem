@@ -2,29 +2,8 @@
 
 gsap.registerPlugin(Flip, CustomEase);
 
-const RED = '#ff3b30';
-const GREEN = '#34c759'
-const BLUE = '#007bff';
-const GRAY = '#8e8e93';
-const WHITE = "#ffffff";
-const GOLD = "#ffcc01";
-const LIGHT_RED ='#ffb6b3';
-const LIGHT_BLUE = '#b2d7ff';
-const LIGHT_GREEN = '#aeeabd';
-const DARK_GRAY = '#3a3a3c';
-
-const LABEL_FONT = {
-  family: 'Arial',
-  size: 40,
-  anchor: 'middle',
-  "alignment-baseline": "middle",
-  // fill: "white",
-};
-
-const LABEL_EXPONENT_FONT = Object.assign({}, LABEL_FONT, {
-  size: 18,
-  'baseline-shift': "super",
-});
+import {RED, GREEN, BLUE, LIGHT_BLUE, LIGHT_GREEN, DARK_GRAY, GRAY, WHITE} from "./constants.js";
+import {LABEL_FONT, LABEL_EXPONENT_FONT} from "./constants.js";
 
 
 let draw = SVG()
