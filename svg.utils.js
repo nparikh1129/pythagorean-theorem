@@ -77,12 +77,10 @@ SVG.extend(SVG.Element, {
     let dx = dst.x - src.x;
     let dy = dst.y - src.y;
     this.translate(dx, dy);
-
     // gsap.set(this.node, {
     //   x: "+=" + dx,
     //   y: "+=" + dy,
     // })
-
     return this;
   },
 
@@ -105,13 +103,11 @@ SVG.extend(SVG.Element, {
   setRotation: function(origin, angle) {
     let pivot = this.getPosition(origin);
     let da = angle - this.transform().rotate;
-
     this.rotate(da, this.point(pivot.x, pivot.y));
     // gsap.set(this.node, {
     //   transformOrigin: origin,
     //   rotate: "+=" + da,
     // })
-
     return this;
   },
 

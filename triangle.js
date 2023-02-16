@@ -31,7 +31,12 @@ let draw = SVG()
   .addTo('body')
   .size(document.body.clientWidth, window.visualViewport.height)
   .css({ 'background-color': '#1c1c1e' });
-// TODO: Handle onResize event
+
+// let draw = SVG()
+//   .addTo('body')
+//   .attr({ width: "100%", height: "100%" })
+//   .css({ 'background-color': '#1c1c1e' })
+//   .viewbox(0, 0, 1200, 900);
 
 window.addEventListener("resize", () => {
   draw.size(document.body.clientWidth, window.visualViewport.height)
@@ -99,11 +104,10 @@ SVG.RightTriangle = class extends SVG.G {
       'stroke-linejoin': 'round',
     })
 
-    this._rightAngleSymbol = draw.rect(15, 15)
-    this._rightAngleSymbol.attr({
+    this._rightAngleSymbol = draw.rect(15, 15).attr({
       'fill-opacity': 0,
       stroke: DARK_GRAY,
-      'stroke-width': 1,
+      'stroke-width': 2,
     })
 
     // Event handlers
@@ -652,10 +656,12 @@ class TimelineCoordinator {
 }
 
 
+// console.log("Draw Pos", draw.getPosition("center"))
 let triangle = draw.rightTriangle(150, 150, 300)
   .setLabelsVisible(false)
   .alignPosition('center', draw, 'center')
   .setRotation('center', -90);
+// console.log("Triangle Pos", triangle.rbox(draw))
 
 let proofSquare = draw.proofSquare(triangle)
   .back()
@@ -690,18 +696,14 @@ let buildTimeline = function() {
   let box = ps.square.rbox(draw);
 
   let ps2 = proofSquare2;
+  ps.arrangement = "TWISTED_SQUARES";
+  ps2.arrangement = "ALIGNED_SQUARES";
 
 
   let tl = gsap.timeline({ paused: true });
   tlc.timeline(tl);
 
   tlc.addKeyframeStart();
-
-  tl.add(() => {
-    ps.arrangement = "TWISTED_SQUARES";
-    ps2.arrangement = "ALIGNED_SQUARES";
-  });
-  tl.hide(triangle.getLabels());
 
   tl.fadeIn(triangle.labelA.node)
 
@@ -719,11 +721,16 @@ let buildTimeline = function() {
 
   tlc.addKeyframe();
 
-  tl.to(triangle, {
+  tl.add(gsap.to(triangle, {
     lengthA: 175,
     lengthB: 125,
     duration: 1,
-    // TODO: Clear the cache with a clearProps here?
+    onReverseComplete: function() { this.invalidate() },
+  }));
+
+  tl.add(() => {
+    ps.arrangement = "TWISTED_SQUARES";
+    ps2.arrangement = "ALIGNED_SQUARES";
   });
 
   /*** Square Construction Timeline ***/
@@ -882,20 +889,30 @@ let buildTimeline = function() {
 
   tl.fadeOut([ps2.a2.node, ps2.b2.node]);
 
+  tlc.addKeyframe();
+
   tl.to([ps2.t3.node, ps2.t4.node], {
     x: `+=${ps.lengthB}`,
     duration: 1.2,
   });
+
+  tlc.addKeyframe();
+
   tl.to(ps2.t4.node, {
     transformOrigin: "left bottom",
     rotate: "-=90",
     duration: 1.2,
   });
+
+  tlc.addKeyframe();
+
   tl.to(ps2.t1.node, {
     transformOrigin: "right top",
     rotate: "+=90",
     duration: 1.2,
   });
+
+  tlc.addKeyframe();
 
   tl.fadeIn(ps2.c2.node);
   tl.add(() => {
@@ -981,8 +998,13 @@ let buildTimeline = function() {
   tl.show(triangle.getNonPlainElements());
   tl.fadeIn(triangle.node);
 
+  tl.add(gsap.from(triangle, {
+    lengthA: 175,
+    lengthB: 125,
+    onComplete: function() { this.invalidate() },
+    onReverseComplete: function() { this.invalidate() },
+  }));
 
-  tlc.addKeyframe();
   tlc.addKeyframeEnd();
 
   tl.eventCallback('onComplete', () => tlc.completed(tl));
