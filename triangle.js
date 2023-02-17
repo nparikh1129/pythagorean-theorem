@@ -18,13 +18,23 @@ let triangle = draw.rightTriangle(150, 150, 300)
 
 let proofSquare = draw.proofSquare(triangle)
   .back()
-  .hideChildren();
+  .hideChildren()
+  .alignPosition("center", draw, "center")
+
+proofSquare.arrangement = "TWISTED_SQUARES";
+
+proofSquare.square
+  .attr({ opacity: 0 })
+  .front()
+  .show()
 
 let proofSquare2 = draw.proofSquare(triangle)
   .setLabelsVisible(true)
   .setArrangement('ALIGNED_SQUARES')
   .front()
   .hide();
+
+proofSquare2.arrangement = "ALIGNED_SQUARES";
 
 let equation = draw.equation()
   .scale(3)
@@ -36,27 +46,14 @@ let a2 = draw.use(A2).hide();
 let b2 = draw.use(B2).hide();
 let c2 = draw.use(C2).hide();
 
-
-let buildTimeline = function() {
-
-  let ps = proofSquare;
-  ps.alignPosition("center", draw, "center");
-  ps.square.attr({ opacity: 0 });
-  ps.square.front();
-  ps.square.show();
-  // TODO: Make this part of the initial layout
-  let box = ps.square.rbox(draw);
-
-  let ps2 = proofSquare2;
-  ps.arrangement = "TWISTED_SQUARES";
-  ps2.arrangement = "ALIGNED_SQUARES";
+let ps = proofSquare;
+let ps2 = proofSquare2;
+// TODO: Make this part of the initial layout
+let box = ps.square.rbox(draw);
 
 
-  let tl = gsap.timeline({ paused: true });
-  tlc.timeline(tl);
 
-  tlc.addKeyframeStart();
-
+let triangleSideLengths = function(tl) {
   tl.fadeIn(triangle.labelA.node)
 
   tlc.addKeyframe();
@@ -84,96 +81,114 @@ let buildTimeline = function() {
     ps.arrangement = "TWISTED_SQUARES";
     ps2.arrangement = "ALIGNED_SQUARES";
   });
+}
 
-  /*** Square Construction Timeline ***/
 
-  tlc.addKeyframe();
+let buildProofSquare = function(tl) {
+   /*** Square Construction Timeline ***/
 
-  triangle.addToTimeline(tl)
-    .alignPosition("bottom left", box, "bottom left")
-    .to({ duration: 1 });
+   tlc.addKeyframe({label: "BuildProofSquare"});
 
-  tlc.addKeyframe();
+   triangle.addToTimeline(tl)
+     .alignPosition("bottom left", box, "bottom left")
+     .to({ duration: 1 });
+ 
+   tlc.addKeyframe();
+ 
+   tl.show(ps.t4.node);
+   triangle.addToTimeline(tl)
+     .rotate(90)
+     .alignPosition("top left", ps, "top left")
+     .to({
+       duration: 2,
+       ease: "power2.inOut",
+     });
+ 
+   tlc.addKeyframe();
+ 
+   tl.show(ps.t1.node);
+   triangle.addToTimeline(tl)
+     .rotate(90)
+     .alignPosition("top right", ps, "top right")
+     .to({
+       duration: 2,
+       ease: "power2.inOut",
+     });
+ 
+   tlc.addKeyframe();
+ 
+   tl.fadeIn(ps.t2.node, {
+     duration: 0
+   });
+   triangle
+     .saveState()
+     .rotate(90)
+     .alignPosition("bottom right", ps, "bottom right");
+   tl.to(triangle.node, triangle.diffState({
+     duration: 2,
+     ease: "power2.inOut",
+   }));
+   tl.fadeIn(ps.t3.node, {
+     duration: 0
+   });
+   tl.fadeOut(triangle.node, {
+     duration: 0
+   });
+ 
+   tlc.addKeyframe();
+ 
+   tl.to(ps.square.node, {
+     onStart: () => ps.square.front(),
+     attr: {
+       opacity: 1,
+     },
+     duration: 1.5,
+     ease: "power2.in",
+   });
+ 
+   tlc.addKeyframe();
+ 
+   ps.square
+     .saveState()
+     .alignPosition("right", box, "left")
+     .translate(-25, 0);
+   tl.to(ps.square.node, ps.square.diffState({
+     duration: 1,
+   }));
+ 
+   tlc.addKeyframe();
+ 
+   ps.square
+     .saveState()
+     .alignPosition("center", box, "center");
+   tl.to(ps.square.node, ps.square.diffState({
+     onStart: () => ps.square.back(),
+     onReverseComplete: () => ps.square.front(),
+     duration: 1,
+   }));
+ 
+   tlc.addKeyframe();
+ 
+   tl.fadeIn(ps.c2.node);
+ 
+   tlc.addKeyframe();
+ 
+   tl.fadeOut(ps.c2.node);
+}
 
-  tl.show(ps.t4.node);
-  triangle.addToTimeline(tl)
-    .rotate(90)
-    .alignPosition("top left", ps, "top left")
-    .to({
-      duration: 2,
-      ease: "power2.inOut",
-    });
 
-  tlc.addKeyframe();
 
-  tl.show(ps.t1.node);
-  triangle.addToTimeline(tl)
-    .rotate(90)
-    .alignPosition("top right", ps, "top right")
-    .to({
-      duration: 2,
-      ease: "power2.inOut",
-    });
+let buildTimeline = function() {
 
-  tlc.addKeyframe();
+  let tl = gsap.timeline({ paused: true });
+  tlc.timeline(tl);
 
-  tl.fadeIn(ps.t2.node, {
-    duration: 0
-  });
-  triangle
-    .saveState()
-    .rotate(90)
-    .alignPosition("bottom right", ps, "bottom right");
-  tl.to(triangle.node, triangle.diffState({
-    duration: 2,
-    ease: "power2.inOut",
-  }));
-  tl.fadeIn(ps.t3.node, {
-    duration: 0
-  });
-  tl.fadeOut(triangle.node, {
-    duration: 0
-  });
+  tlc.addKeyframeStart();
 
-  tlc.addKeyframe();
+  triangleSideLengths(tl);
 
-  tl.to(ps.square.node, {
-    onStart: () => ps.square.front(),
-    attr: {
-      opacity: 1,
-    },
-    duration: 1.5,
-    ease: "power2.in",
-  });
+  buildProofSquare(tl);
 
-  tlc.addKeyframe();
-
-  ps.square
-    .saveState()
-    .alignPosition("right", box, "left")
-    .translate(-25, 0);
-  tl.to(ps.square.node, ps.square.diffState({
-    duration: 1,
-  }));
-
-  tlc.addKeyframe();
-
-  ps.square
-    .saveState()
-    .alignPosition("center", box, "center");
-  tl.to(ps.square.node, ps.square.diffState({
-    onStart: () => ps.square.back(),
-    onReverseComplete: () => ps.square.front(),
-    duration: 1,
-  }));
-
-  tlc.addKeyframe();
-
-  tl.fadeIn(ps.c2.node);
-
-  tlc.addKeyframe();
-
-  tl.fadeOut(ps.c2.node);
 
   /*** Aligned Square Timeline ***/
 
@@ -361,6 +376,5 @@ let buildTimeline = function() {
 
   tl.eventCallback('onComplete', () => tlc.completed(tl));
 }
-
 
 buildTimeline();

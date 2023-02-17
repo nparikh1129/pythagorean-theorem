@@ -7,7 +7,7 @@ class TimelineCoordinator {
     this.tl;
     this.data = {};
     this.keyframeIndex = 0;
-  };
+  }
 
   timeline(tl) {
     if (tl) {
@@ -16,11 +16,11 @@ class TimelineCoordinator {
     else {
       return this.tl;
     }
-  };
+  }
 
   completed(tl) {
     console.log('completed');
-  };
+  }
 
   play() {
     if (this.tl.paused() || this.tl.reversed()) {
@@ -30,7 +30,7 @@ class TimelineCoordinator {
     else {
       this.jumpNext();
     }
-  };
+  }
 
   playReverse() {
     if (this.tl.paused() || !this.tl.reversed()) {
@@ -39,25 +39,32 @@ class TimelineCoordinator {
     else {
       this.jumpPrev();
     }
-  };
+  }
 
   jumpNext() {
     let label = this.tl.nextLabel();
     if (label) {
       this.tl.seek(label, false);
     }
-  };
+  }
 
   jumpPrev() {
     let label = this.tl.previousLabel();
     if (label) {
       this.tl.seek(label, false);
     }
-  };
+  }
 
-  addKeyframe({pause = true} = {}) {
+  jumpLabel(label) {
+    this.tl.seek(label, false);
+  }
+
+  addKeyframe({pause = true, label = null} = {}) {
+    if (!label) {
+      label = "kf-" + this.keyframeIndex++;
+    }
     this.tl.addLabel(
-      "kf-" + this.keyframeIndex++,
+      label,
       "+=0.0001"
     );
     if (pause) {
@@ -65,22 +72,22 @@ class TimelineCoordinator {
     }
     this.tl.add(() => {}, "+=0.0001");
     this.tl.seek("+=0", false);
-  };
+  }
 
   addKeyframeStart() {
     this.addKeyframe({ pause: false });
-  };
+  }
 
   addKeyframeEnd(seek = true) {
     this.addKeyframe({ pause: false });
     this.tl.seek(0, false);
     this.tl.invalidate();
-  };
+  }
 
   applyChanges() {
     this.tl.add(() => {}, "+=0.0001");
     this.tl.seek("+=0", false);
-  };
+  }
 }
 
 export const timelineCoordinator = new TimelineCoordinator();
