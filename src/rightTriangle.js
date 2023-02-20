@@ -59,7 +59,6 @@ SVG.RightTriangle = class extends SVG.G {
       this.resize(this._lineA.length, this._lineB.length);
     });
 
-
     // Arrangement
     this.add(this.labelA);
     this.add(this.labelB);
@@ -82,18 +81,6 @@ SVG.RightTriangle = class extends SVG.G {
   }
   set lengthB(length) {
     this.resize(this.lengthA, length);
-  }
-
-  get v0() {
-    return this._verts[0];
-  }
-
-  get v1() {
-    return this._verts[1];
-  }
-
-  get v2() {
-    return this._verts[2];
   }
 
   resize(lengthA, lengthB) {

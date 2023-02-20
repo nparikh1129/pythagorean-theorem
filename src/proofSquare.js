@@ -9,10 +9,6 @@ SVG.ProofSquare = class extends SVG.G {
     super();
 
     this.triangle = triangle;
-    this.v0 = this.triangle.v0;
-    this.v1 = this.triangle.v1;
-    this.v2 = this.triangle.v2;
-
     this.arrangement = 'TWISTED_SQUARES';
     this._labelsVisible = false;
 
@@ -61,9 +57,9 @@ SVG.ProofSquare = class extends SVG.G {
   arrange() {
     this.lengthA = this.triangle.lengthA;
     this.lengthB = this.triangle.lengthB;
-    this.v0 = this.triangle.v0;
-    this.v1 = this.triangle.v1;
-    this.v2 = this.triangle.v2;
+    // this.v0 = this.triangle.v0;
+    // this.v1 = this.triangle.v1;
+    // this.v2 = this.triangle.v2;
 
     this.t1.resize(this.lengthA, this.lengthB);
     this.t2.resize(this.lengthA, this.lengthB);

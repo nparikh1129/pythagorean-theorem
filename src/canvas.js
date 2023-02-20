@@ -3,7 +3,7 @@ export const draw = SVG()
   .size(document.body.clientWidth, window.visualViewport.height)
   .css({ 'background-color': '#1c1c1e' });
 
-// let draw = SVG()
+// export const draw = SVG()
 //   .addTo('body')
 //   .attr({ width: "100%", height: "100%" })
 //   .css({ 'background-color': '#1c1c1e' })
