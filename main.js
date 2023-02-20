@@ -53,7 +53,7 @@ let box = ps.square.rbox(draw);
 
 
 
-let triangleSideLengths = function(tl) {
+const triangleSideLengths = function(tl) {
   tl.fadeIn(triangle.labelA.node)
 
   tlc.addKeyframe();
@@ -84,7 +84,7 @@ let triangleSideLengths = function(tl) {
 }
 
 
-let buildProofSquare = function(tl) {
+const buildProofSquare = function(tl) {
    /*** Square Construction Timeline ***/
 
    tlc.addKeyframe({label: "BuildProofSquare"});
@@ -177,20 +177,7 @@ let buildProofSquare = function(tl) {
 }
 
 
-
-let buildTimeline = function() {
-
-  let tl = gsap.timeline({ paused: true });
-  tlc.timeline(tl);
-
-  tlc.addKeyframeStart();
-
-  triangleSideLengths(tl);
-
-  buildProofSquare(tl);
-
-
-  /*** Aligned Square Timeline ***/
+const alignedSquares = function(tl) {
 
   tlc.addKeyframe();
 
@@ -285,9 +272,10 @@ let buildTimeline = function() {
   tl.add(() => {
     ps2.arrangement = "TWISTED_SQUARES";
   });
+}
 
 
-  /*** Equation Timeline ***/
+const buildEquation = function(tl) {
 
   tlc.addKeyframe();
 
@@ -371,6 +359,23 @@ let buildTimeline = function() {
     onComplete: function() { this.invalidate() },
     onReverseComplete: function() { this.invalidate() },
   }));
+}
+
+
+let buildTimeline = function() {
+
+  let tl = gsap.timeline({ paused: true });
+  tlc.timeline(tl);
+
+  tlc.addKeyframeStart();
+
+  triangleSideLengths(tl);
+
+  buildProofSquare(tl);
+
+  alignedSquares(tl);
+
+  buildEquation(tl);
 
   tlc.addKeyframeEnd();
 

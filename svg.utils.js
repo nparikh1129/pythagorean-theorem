@@ -27,7 +27,7 @@ SVG.extend(SVG.Box, {
   intersectsWith: function(box) {
     let x1min, x1max, y1min, y1max;
     let x2min, x2max, y2min, y2max;
-    
+
     [x1min, x1max] = this.x <= this.x2 ? [this.x, this.x2] : [this.x2, this.x];
     [y1min, y1max] = this.y <= this.y2 ? [this.y, this.y2] : [this.y2, this.y];
     [x2min, x2max] = box.x <= box.x2 ? [box.x, box.x2] : [box.x2, box.x];
