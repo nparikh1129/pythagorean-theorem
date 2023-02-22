@@ -1,6 +1,16 @@
-.label {
+body {
+  margin: 0px;
+  padding: 0px;
+  border: 0px;
+}
+
+#canvas {
+  background-color: #1c1c1e;
+}
+
+/* .label {
   font-family: 'Arial';
   font-size: 40;
   text-anchor: 'middle';
   alignment-baseline: "middle";
-}
+} */
