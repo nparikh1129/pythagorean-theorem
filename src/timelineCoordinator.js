@@ -92,22 +92,12 @@ class TimelineCoordinator {
 
 export const timelineCoordinator = new TimelineCoordinator();
 
-let jumpPrev = draw.rect(50, 50).fill("red");
-jumpPrev.on("click", () => {
-  timelineCoordinator.jumpPrev();
-})
-
-let playReverse = draw.rect(50, 50).fill("green").translate(50, 0);
-playReverse.on("click", () => {
+let back = document.getElementById("button-back");
+back.addEventListener("click" , () => {
   timelineCoordinator.playReverse();
-})
+});
 
-let play = draw.rect(50, 50).fill("blue").translate(100, 0);
-play.on("click", () => {
+let next = document.getElementById("button-next");
+next.addEventListener("click" , () => {
   timelineCoordinator.play();
-})
-
-let jumpNext = draw.rect(50, 50).fill("yellow").translate(150, 0);
-jumpNext.on("click", () => {
-  timelineCoordinator.jumpNext();
-})
+});
