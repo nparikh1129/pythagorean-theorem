@@ -101,3 +101,16 @@ let next = document.getElementById("button-next");
 next.addEventListener("click" , () => {
   timelineCoordinator.play();
 });
+
+document.addEventListener('keydown', function(e) {
+  e.preventDefault();
+  if (e.repeat) {
+    return;
+  }
+  if (e.key == "ArrowRight") {
+    timelineCoordinator.play();
+  }
+  else if (e.key == "ArrowLeft") {
+    timelineCoordinator.playReverse();
+  }
+});
