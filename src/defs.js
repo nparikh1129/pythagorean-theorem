@@ -2,7 +2,6 @@ import {LABEL_FONT, LABEL_EXPONENT_FONT, WHITE} from "./constants.js";
 import {draw} from "./canvas.js";
 
 
-
 export const A2 = draw.text(function(add) {
   add.tspan('a').font(LABEL_FONT)
   add.tspan('2').font(LABEL_EXPONENT_FONT)

@@ -25,7 +25,6 @@ class TimelineCoordinator {
   play() {
     if (this.tl.paused() || this.tl.reversed()) {
       this.tl.play();
-      console.log('playing');
     }
     else {
       this.jumpNext();
@@ -103,7 +102,6 @@ next.addEventListener("click" , () => {
 });
 
 document.addEventListener('keydown', function(e) {
-  e.preventDefault();
   if (e.repeat) {
     return;
   }

@@ -13,8 +13,12 @@ import {timelineCoordinator as tlc} from "./src/timelineCoordinator.js";
 
 let triangle = draw.rightTriangle(150, 150, 300)
   .setLabelsVisible(false)
-  .alignPosition('center', draw, 'center')
-  .setRotation('center', -90);
+  .setResizeHandlesVisible(false)
+  .setRotation('center', -90)
+  .setPosition("bottom left", 500, 600)
+  .setResizeHandlesVisible(true)
+  // .alignPosition('center', draw, 'center')
+
 
 let proofSquare = draw.proofSquare(triangle)
   .back()
