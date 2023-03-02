@@ -44,6 +44,27 @@ SVG.extend(SVG.Box, {
 
 SVG.extend(SVG.Element, {
 
+  background: function() {
+    this.node.dataset.svgBackground = "";
+    this.back();
+    return this;
+  },
+
+  back: function() {
+    const parent = this.parent();
+    this.remove();
+
+    let index = 0;
+    if (parent.node.hasChildNodes()) {
+      if ("svgBackground" in parent.node.firstChild.dataset)
+        index = 1;
+    }
+    // Move node to back
+    parent.add(this, index);
+
+    return this
+  },
+
   setFill: function(color) {
     gsap.set(this.node, {
       attr: { fill: color },
@@ -212,92 +233,3 @@ SVG.extend(SVG.EventTarget, {
     })
   },
 });
-
-
-SVG.TimelineBuilder = class extends SVG.EventTarget {
-
-  constructor({pause = false, unpauseEvent} = {}) {
-    super();
-
-    this.config = {
-      pause: pause,
-      unpauseEvent: unpauseEvent,
-    }
-    this._timeline = new SVG.Timeline();
-    this._time = 0;
-    this._active = false;
-    this._after;
-
-    this._unpauseHandler = () => {
-      if (this._active) {
-        this._timeline.play();
-      }
-    }
-    if (unpauseEvent) {
-      this.subscribe(unpauseEvent, this._unpauseHandler);
-    }
-  }
-
-  _halt() {
-    this._active = false;
-    this._timeline.pause();
-  }
-
-  _proceed() {
-    this._active = true;
-    this._timeline.play();
-  }
-
-  play() {
-    this._proceed();
-  }
-
-  append(runner, {delay = 0, pause = this.config.pause} = {}) {
-    if (!Array.isArray(runner)) {
-      runner = [runner];
-    }
-    this._time += delay;
-    
-    let duration = 0;
-    for (let r of runner) {
-      this._timeline.schedule(r, this._time, 'absolute');
-      r.active(true);
-      duration = Math.max(duration, r.duration());
-    }
-    this._time += duration;
-
-    if (pause) {
-      this.appendPause();
-    }
-  }
-
-  //TODO: Add an option to block the timeline (pause and make unpauseable) until after the function completes
-  // queue this in runner () => {this._halt(); func(); this._resume()}
-  // Then the default duration can be 0 removed as an option
-  appendFunction(func, {delay = 0, pause = false, duration = 20} = {}) {
-    this._time += delay;
-    let runner = new SVG.Runner();
-    runner.queue(func);
-    this._timeline.schedule(runner, this._time, 'absolute');
-    this._time += duration;
-
-    if (pause) {
-      this.appendPause();
-    }
-  }
-
-  appendPause() {
-    let runner = new SVG.Runner();
-    runner.queue(() => { this._timeline.pause() });
-    this._timeline.schedule(runner, this._time, 'absolute');
-    this._time += 20;
-  }
-
-  appendTimelineBuilder(tb, {delay = 0, pause = false} = {}) {
-    this.appendFunction(() => {
-      this._halt()
-      tb.appendFunction(() => this._proceed());
-      tb.play();
-    }, { delay: delay, pause: pause});
-  }
-}

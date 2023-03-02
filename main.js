@@ -17,8 +17,6 @@ let triangle = draw.rightTriangle(150, 150, 300)
   .setRotation('center', -90)
   .setPosition("bottom left", 500, 600)
   .setResizeHandlesVisible(true)
-  // .alignPosition('center', draw, 'center')
-
 
 let proofSquare = draw.proofSquare(triangle)
   .back()
