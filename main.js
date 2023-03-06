@@ -9,6 +9,7 @@ import "./src/rightTriangle.js";
 import "./src/proofSquare.js";
 import "./src/equation.js";
 import {timelineCoordinator as tlc} from "./src/timelineCoordinator.js";
+import "./src/sidenav.js";
 
 
 let triangle = draw.rightTriangle(150, 150, 300)
@@ -56,6 +57,9 @@ let box = ps.square.rbox(draw);
 
 
 const triangleSideLengths = function(tl) {
+  
+  tlc.addKeyframe({label: "TriangleSideLengths"});
+
   tl.fadeIn(triangle.labelA.node)
 
   tlc.addKeyframe();
@@ -87,99 +91,99 @@ const triangleSideLengths = function(tl) {
 
 
 const buildProofSquare = function(tl) {
-   /*** Square Construction Timeline ***/
+  /*** Square Construction Timeline ***/
 
-   tlc.addKeyframe({label: "BuildProofSquare"});
+  tlc.addKeyframe({label: "BuildProofSquare"});
 
-   triangle.addToTimeline(tl)
-     .alignPosition("bottom left", box, "bottom left")
-     .to({ duration: 1 });
- 
-   tlc.addKeyframe();
- 
-   tl.show(ps.t4.node);
-   triangle.addToTimeline(tl)
-     .rotate(90)
-     .alignPosition("top left", ps, "top left")
-     .to({
-       duration: 2,
-       ease: "power2.inOut",
-     });
- 
-   tlc.addKeyframe();
- 
-   tl.show(ps.t1.node);
-   triangle.addToTimeline(tl)
-     .rotate(90)
-     .alignPosition("top right", ps, "top right")
-     .to({
-       duration: 2,
-       ease: "power2.inOut",
-     });
- 
-   tlc.addKeyframe();
- 
-   tl.fadeIn(ps.t2.node, {
-     duration: 0
-   });
-   triangle
-     .saveState()
-     .rotate(90)
-     .alignPosition("bottom right", ps, "bottom right");
-   tl.to(triangle.node, triangle.diffState({
-     duration: 2,
-     ease: "power2.inOut",
-   }));
-   tl.fadeIn(ps.t3.node, {
-     duration: 0
-   });
-   tl.fadeOut(triangle.node, {
-     duration: 0
-   });
- 
-   tlc.addKeyframe();
- 
-   tl.to(ps.square.node, {
-     onStart: () => ps.square.front(),
-     attr: {
-       opacity: 1,
-     },
-     duration: 1.5,
-     ease: "power2.in",
-   });
- 
-   tlc.addKeyframe();
- 
-   ps.square
-     .saveState()
-     .alignPosition("right", box, "left")
-     .translate(-25, 0);
-   tl.to(ps.square.node, ps.square.diffState({
-     duration: 1,
-   }));
- 
-   tlc.addKeyframe();
- 
-   ps.square
-     .saveState()
-     .alignPosition("center", box, "center");
-   tl.to(ps.square.node, ps.square.diffState({
-     onStart: () => ps.square.back(),
-     onReverseComplete: () => ps.square.front(),
-     duration: 1,
-   }));
- 
-   tlc.addKeyframe();
- 
-   tl.fadeIn(ps.c2.node);
- 
-   tlc.addKeyframe();
- 
-   tl.fadeOut(ps.c2.node);
+  triangle.addToTimeline(tl)
+    .alignPosition("bottom left", box, "bottom left")
+    .to({ duration: 1 });
+
+  tlc.addKeyframe();
+
+  tl.show(ps.t4.node);
+  triangle.addToTimeline(tl)
+    .rotate(90)
+    .alignPosition("top left", ps, "top left")
+    .to({
+      duration: 2,
+      ease: "power2.inOut",
+    });
+
+  tlc.addKeyframe();
+
+  tl.show(ps.t1.node);
+  triangle.addToTimeline(tl)
+    .rotate(90)
+    .alignPosition("top right", ps, "top right")
+    .to({
+      duration: 2,
+      ease: "power2.inOut",
+    });
+
+  tlc.addKeyframe();
+
+  tl.fadeIn(ps.t2.node, {
+    duration: 0
+  });
+  triangle
+    .saveState()
+    .rotate(90)
+    .alignPosition("bottom right", ps, "bottom right");
+  tl.to(triangle.node, triangle.diffState({
+    duration: 2,
+    ease: "power2.inOut",
+  }));
+  tl.fadeIn(ps.t3.node, {
+    duration: 0
+  });
+  tl.fadeOut(triangle.node, {
+    duration: 0
+  });
+
+  tlc.addKeyframe();
+
+  tl.to(ps.square.node, {
+    onStart: () => ps.square.front(),
+    attr: {
+      opacity: 1,
+    },
+    duration: 1.5,
+    ease: "power2.in",
+  });
+
+  tlc.addKeyframe();
+
+  ps.square
+    .saveState()
+    .alignPosition("right", box, "left")
+    .translate(-25, 0);
+  tl.to(ps.square.node, ps.square.diffState({
+    duration: 1,
+  }));
+
+  tlc.addKeyframe();
+
+  ps.square
+    .saveState()
+    .alignPosition("center", box, "center");
+  tl.to(ps.square.node, ps.square.diffState({
+    onStart: () => ps.square.back(),
+    onReverseComplete: () => ps.square.front(),
+    duration: 1,
+  }));
+
+  tlc.addKeyframe();
+
+  tl.fadeIn(ps.c2.node);
 }
 
 
 const alignedSquares = function(tl) {
+
+  tlc.addKeyframe({label: "AlignedSquaresArrangement"});
+
+  tl.fadeOut(ps.c2.node);
 
   tlc.addKeyframe();
 
@@ -214,8 +218,12 @@ const alignedSquares = function(tl) {
   tlc.addKeyframe();
 
   tl.fadeIn(ps.b2.node)
+}
 
-  tlc.addKeyframe();
+
+const compareArrangements = function(tl) {
+
+  tlc.addKeyframe({label: "CompareArrangements"});
 
   ps.saveState()
     .alignPositionX("right", draw, "center", -50)
@@ -279,7 +287,7 @@ const alignedSquares = function(tl) {
 
 const buildEquation = function(tl) {
 
-  tlc.addKeyframe();
+  tlc.addKeyframe({label: "BuildEquation"});
 
   a2.saveState()
     .show()
@@ -366,7 +374,7 @@ const buildEquation = function(tl) {
 
 let buildTimeline = function() {
 
-  let tl = gsap.timeline({ paused: true });
+  let tl = gsap.timeline();
   tlc.timeline(tl);
 
   tlc.addKeyframeStart();
@@ -376,6 +384,8 @@ let buildTimeline = function() {
   buildProofSquare(tl);
 
   alignedSquares(tl);
+
+  compareArrangements(tl);
 
   buildEquation(tl);
 

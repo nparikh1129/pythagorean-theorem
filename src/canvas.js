@@ -18,7 +18,7 @@ draw.rect(4800, 3600)
   .background()
 
 // TODO: Remove this edit mode helper
-draw.circle(10).fill("blue").center(0, 0)
+draw.circle(10).fill("gray").center(0, 0)
 
 
 document.addEventListener('keydown', function(e) {

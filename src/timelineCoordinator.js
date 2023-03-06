@@ -74,7 +74,7 @@ class TimelineCoordinator {
   }
 
   addKeyframeStart() {
-    this.addKeyframe({ pause: false });
+    this.addKeyframe({ pause: false, label: "START" });
   }
 
   addKeyframeEnd(seek = true) {
