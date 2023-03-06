@@ -9,6 +9,7 @@ import "./src/rightTriangle.js";
 import "./src/proofSquare.js";
 import "./src/equation.js";
 import {timelineCoordinator as tlc} from "./src/timelineCoordinator.js";
+import { updateHeading } from "./src/heading.js";
 import "./src/sidenav.js";
 
 
@@ -57,7 +58,9 @@ let box = ps.square.rbox(draw);
 
 
 const triangleSideLengths = function(tl) {
-  
+
+  updateHeading(tl, "Triangle Side Lengths");
+
   tlc.addKeyframe({label: "TriangleSideLengths"});
 
   tl.fadeIn(triangle.labelA.node)
@@ -87,11 +90,14 @@ const triangleSideLengths = function(tl) {
     ps.arrangement = "TWISTED_SQUARES";
     ps2.arrangement = "ALIGNED_SQUARES";
   });
+
+  tlc.addKeyframe();
 }
 
 
 const buildProofSquare = function(tl) {
-  /*** Square Construction Timeline ***/
+
+  updateHeading(tl, "Twisted Squares Arrangement");
 
   tlc.addKeyframe({label: "BuildProofSquare"});
 
@@ -176,10 +182,14 @@ const buildProofSquare = function(tl) {
   tlc.addKeyframe();
 
   tl.fadeIn(ps.c2.node);
+
+  tlc.addKeyframe();
 }
 
 
 const alignedSquares = function(tl) {
+
+  updateHeading(tl, "Aligned Squares Arrangement");
 
   tlc.addKeyframe({label: "AlignedSquaresArrangement"});
 
@@ -218,10 +228,14 @@ const alignedSquares = function(tl) {
   tlc.addKeyframe();
 
   tl.fadeIn(ps.b2.node)
+
+  tlc.addKeyframe();
 }
 
 
 const compareArrangements = function(tl) {
+
+  updateHeading(tl, "Comparing Arrangements");
 
   tlc.addKeyframe({label: "CompareArrangements"});
 
@@ -282,10 +296,14 @@ const compareArrangements = function(tl) {
   tl.add(() => {
     ps2.arrangement = "TWISTED_SQUARES";
   });
+
+  tlc.addKeyframe();
 }
 
 
 const buildEquation = function(tl) {
+
+  updateHeading(tl, "Building the Equation");
 
   tlc.addKeyframe({label: "BuildEquation"});
 
@@ -378,6 +396,8 @@ let buildTimeline = function() {
   tlc.timeline(tl);
 
   tlc.addKeyframeStart();
+
+  tlc.addKeyframe()
 
   triangleSideLengths(tl);
 

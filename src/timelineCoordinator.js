@@ -55,7 +55,8 @@ class TimelineCoordinator {
   }
 
   jumpLabel(label) {
-    this.tl.seek(label, false);
+    this.tl.pause(label, false);
+    // this.tl.seek(label, false);
   }
 
   addKeyframe({pause = true, label = null} = {}) {
