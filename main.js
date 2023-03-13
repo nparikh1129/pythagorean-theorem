@@ -2,7 +2,7 @@
 
 gsap.registerPlugin(Flip, CustomEase);
 
-import {draw} from "./src/canvas.js";
+import {draw, viewbox} from "./src/canvas.js";
 import {A2, B2, C2} from "./src/defs.js";
 import "./src/resizableLine.js";
 import "./src/rightTriangle.js";
@@ -223,6 +223,12 @@ const alignedSquares = function(tl) {
 
   tlc.addKeyframe();
 
+  tl.add(viewbox.animation({
+    zoomFactor: 2,
+  }));
+
+  tlc.addKeyframe();
+
   tl.fadeIn(ps.a2.node)
 
   tlc.addKeyframe();
@@ -238,6 +244,12 @@ const compareArrangements = function(tl) {
   updateHeading(tl, "Comparing Arrangements");
 
   tlc.addKeyframe({label: "CompareArrangements"});
+
+  tl.add(viewbox.animation({
+    zoomFactor: 1
+  }));
+
+  tlc.addKeyframe();
 
   ps.saveState()
     .alignPositionX("right", draw, "center", -50)
@@ -392,7 +404,7 @@ const buildEquation = function(tl) {
 
 let buildTimeline = function() {
 
-  let tl = gsap.timeline();
+  const tl = gsap.timeline();
   tlc.timeline(tl);
 
   tlc.addKeyframeStart();

@@ -1,12 +1,8 @@
-html, body, #content-container {
-  height: 100%;
-  margin: 0;
-}
-
 body {
+  height: 100vh;
+  margin: 0;
   background-color: #1c1c1e;
 }
-
 
 
 #sidenav {
@@ -23,13 +19,16 @@ body {
 }
 
 #sidenav a {
-  padding: 8px 8px 8px 32px;
+  padding: 12px 8px 12px 32px;
   text-decoration: none;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 15px;
   color: #e5e5ea;
   display: block;
-  transition: 0.3s;
+  transition: 0.2s;
+}
+#sidenav a:hover {
+  color: #4ca5ff;
 }
 
 #sidenav-toggle {
@@ -54,13 +53,12 @@ body {
 }
 
 
-
 #content-container {
+  height: 100%;
   display: flex;
   flex-flow: column nowrap;
   transition: margin-left .5s;
 }
-
 
 #heading {
   padding-top: 20px;
@@ -74,15 +72,14 @@ body {
 }
 
 
-#canvas {
+#canvas-container {
   flex-grow: 1;
   min-height: 0;
 }
-svg {
+#canvas {
   width: 100%;
   height: 100%;
 }
-
 
 #buttons-bar {
   padding-top: 20px;
@@ -99,6 +96,15 @@ svg {
   border: 0;
   border-radius: 5px;
   background-color: #636366;
+  transition-duration: 0.2s;
+}
+
+.button:hover {
+  background-color: #8e8e93;
+}
+
+.button:active {
+  background-color: #3d84cc;
 }
 
 .button-icon {

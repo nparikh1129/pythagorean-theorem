@@ -63,12 +63,9 @@ class TimelineCoordinator {
     if (!label) {
       label = "kf-" + this.keyframeIndex++;
     }
-    this.tl.addLabel(
-      label,
-      "+=0.0001"
-    );
+    this.tl.addLabel(label, "+=0.0001");
     if (pause) {
-      this.tl.addPause();
+      this.tl.addPause(label);
     }
     this.tl.add(() => {}, "+=0.0001");
     this.tl.seek("+=0", false);
