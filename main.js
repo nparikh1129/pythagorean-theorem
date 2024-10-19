@@ -1,6 +1,6 @@
 "use strict";
 
-gsap.registerPlugin(Flip, CustomEase);
+gsap.registerPlugin(Flip, CustomEase, ScrollTrigger, ScrollToPlugin);
 
 import {draw, viewbox} from "./src/canvas.js";
 import {A2, B2, C2} from "./src/defs.js";
@@ -11,6 +11,8 @@ import "./src/equation.js";
 import {timelineCoordinator as tlc} from "./src/timelineCoordinator.js";
 import { updateHeading } from "./src/heading.js";
 import "./src/sidenav.js";
+import "./src/sidetxtPanel.js";
+import "./src/sidetxtContent.js";
 
 
 let triangle = draw.rightTriangle(150, 150, 300)
@@ -22,8 +24,8 @@ let triangle = draw.rightTriangle(150, 150, 300)
 
 let proofSquare = draw.proofSquare(triangle)
   .back()
-  .hideChildren()
   .alignPosition("center", draw, "center")
+  .hideChildren()
 
 proofSquare.arrangement = "TWISTED_SQUARES";
 

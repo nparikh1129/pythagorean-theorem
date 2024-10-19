@@ -7,10 +7,10 @@ let contentContainer = document.querySelector("#content-container");
 sidenavToggle.addEventListener("click", () => {
   if (contentContainer.style.marginLeft != "250px") {
     sidenav.style.left = "0px";
-    contentContainer.style.marginLeft= "250px";
+    contentContainer.style.marginLeft = "250px";
   } else {
     sidenav.style.left = "-250px";
-    contentContainer.style.marginLeft= "0px";
+    contentContainer.style.marginLeft = "0px";
   }
 });
 

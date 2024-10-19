@@ -19,9 +19,6 @@ draw.rect(4800, 3600)
   .move(-1800, -1350)
   .background()
 
-// TODO: Remove this edit mode helper
-draw.circle(10).fill("gray").center(0, 0)
-
 
 // Viewbox animation helper
 const Viewbox = class {
